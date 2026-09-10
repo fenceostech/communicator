@@ -1,0 +1,2537 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<meta name="description" content="Clickable UI/UX prototype for the FenceOS AI Setup Agent.">
+<style>
+html{color-scheme:light dark}
+body{margin:0}
+img{max-width:100%}
+[hidden]{display:none!important}
+</style>
+<title>FenceOS Setup Console</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+/* ================= TOKENS ================= */
+:root{
+  --bg:#F4F6F6; --sunken:#EAEEEE; --panel:#FFFFFF; --panel-2:#F8FAFA;
+  --line:#DCE3E3; --line-2:#C0CBCB;
+  --ink:#101617; --ink-2:#4A5658; --ink-3:#78888A;
+  --accent:#0F6F77; --accent-hov:#0B565C; --accent-ink:#FFFFFF; --accent-soft:#E1EFF0; --accent-line:#96C4C6;
+  --ok:#256D4A; --ok-soft:#E1EFE7; --ok-line:#98C6AE;
+  --warn:#95590A; --warn-soft:#FAEEDA; --warn-line:#DEBA83;
+  --crit:#A02B21; --crit-soft:#FAE6E3; --crit-line:#E3A69E;
+  --hand:#5A44A3; --hand-soft:#ECE8F8; --hand-line:#B4A5E0;
+  --idle:#8C9A9B;
+  --shadow:0 1px 2px rgba(16,22,23,.05), 0 8px 24px -12px rgba(16,22,23,.18);
+  --shadow-lg:0 2px 4px rgba(16,22,23,.06), 0 24px 48px -20px rgba(16,22,23,.30);
+  --scrim:rgba(16,22,23,.42);
+  --r:10px; --r-sm:6px; --r-lg:14px;
+  --sans:"IBM Plex Sans",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+  --disp:"Archivo","IBM Plex Sans",-apple-system,"Segoe UI",sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
+  --rail:252px; --insp:322px;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0C1112; --sunken:#070B0C; --panel:#131A1B; --panel-2:#182122;
+  --line:#26302F; --line-2:#384645;
+  --ink:#E7EDED; --ink-2:#A3B1B2; --ink-3:#718183;
+  --accent:#3EB2B6; --accent-hov:#63C8CB; --accent-ink:#04191B; --accent-soft:#123130; --accent-line:#275453;
+  --ok:#54B583; --ok-soft:#102A20; --ok-line:#22543C;
+  --warn:#D79A45; --warn-soft:#2C2011; --warn-line:#573F1C;
+  --crit:#E08076; --crit-soft:#2D1614; --crit-line:#5B2A25;
+  --hand:#A18FE0; --hand-soft:#1E1936; --hand-line:#3B3163;
+  --idle:#6C7B7D;
+  --shadow:0 1px 2px rgba(0,0,0,.5), 0 10px 28px -14px rgba(0,0,0,.7);
+  --shadow-lg:0 2px 6px rgba(0,0,0,.5), 0 28px 56px -22px rgba(0,0,0,.85);
+  --scrim:rgba(0,0,0,.62);
+}}
+:root[data-theme="dark"]{
+  --bg:#0C1112; --sunken:#070B0C; --panel:#131A1B; --panel-2:#182122;
+  --line:#26302F; --line-2:#384645;
+  --ink:#E7EDED; --ink-2:#A3B1B2; --ink-3:#718183;
+  --accent:#3EB2B6; --accent-hov:#63C8CB; --accent-ink:#04191B; --accent-soft:#123130; --accent-line:#275453;
+  --ok:#54B583; --ok-soft:#102A20; --ok-line:#22543C;
+  --warn:#D79A45; --warn-soft:#2C2011; --warn-line:#573F1C;
+  --crit:#E08076; --crit-soft:#2D1614; --crit-line:#5B2A25;
+  --hand:#A18FE0; --hand-soft:#1E1936; --hand-line:#3B3163;
+  --idle:#6C7B7D;
+  --shadow:0 1px 2px rgba(0,0,0,.5), 0 10px 28px -14px rgba(0,0,0,.7);
+  --shadow-lg:0 2px 6px rgba(0,0,0,.5), 0 28px 56px -22px rgba(0,0,0,.85);
+  --scrim:rgba(0,0,0,.62);
+}
+
+/* ================= BASE ================= */
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:14px;line-height:1.5;-webkit-font-smoothing:antialiased}
+h1,h2,h3,h4{font-family:var(--disp);margin:0;text-wrap:balance;letter-spacing:-.015em;font-weight:600}
+h1{font-size:24px}h2{font-size:18px}h3{font-size:15px}h4{font-size:13px}
+p{margin:0}
+button{font:inherit;color:inherit;background:none;border:none;cursor:pointer}
+input,select,textarea{font:inherit;color:inherit}
+a{color:var(--accent);text-decoration:none}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:4px}
+.mono{font-family:var(--mono);font-variant-ligatures:none}
+.num{font-variant-numeric:tabular-nums}
+.eyebrow{font-family:var(--disp);font-size:10.5px;font-weight:600;letter-spacing:.11em;text-transform:uppercase;color:var(--ink-3)}
+.muted{color:var(--ink-2)}
+.dim{color:var(--ink-3)}
+.hide{display:none !important}
+::-webkit-scrollbar{width:9px;height:9px}
+::-webkit-scrollbar-thumb{background:var(--line-2);border-radius:9px}
+::-webkit-scrollbar-track{background:transparent}
+@media (prefers-reduced-motion:reduce){*{animation-duration:.01ms !important;transition-duration:.01ms !important}}
+
+/* ================= SHELL ================= */
+.app{display:grid;grid-template-columns:var(--rail) 1fr;min-height:100vh}
+.rail{background:var(--panel);border-right:1px solid var(--line);display:flex;flex-direction:column;position:sticky;top:0;height:100vh;overflow-y:auto}
+.brand{display:flex;align-items:center;gap:10px;padding:18px 18px 16px}
+.mark{width:28px;height:28px;border-radius:7px;background:var(--accent);color:var(--accent-ink);display:grid;place-items:center;flex:none}
+.mark svg{width:17px;height:17px}
+.brand-txt{display:flex;flex-direction:column;line-height:1.15}
+.brand-txt b{font-family:var(--disp);font-size:14px;font-weight:700;letter-spacing:-.02em}
+.brand-txt span{font-size:10px;color:var(--ink-3);letter-spacing:.05em;text-transform:uppercase}
+.nav{padding:4px 10px;display:flex;flex-direction:column;gap:1px}
+.nav-sec{padding:14px 8px 6px}
+.nav a{display:flex;align-items:center;gap:9px;padding:7px 9px;border-radius:var(--r-sm);color:var(--ink-2);font-size:13.5px;font-weight:500;cursor:pointer;transition:background .12s,color .12s}
+.nav a:hover{background:var(--panel-2);color:var(--ink)}
+.nav a.on{background:var(--accent-soft);color:var(--accent);font-weight:600}
+.nav a svg{width:16px;height:16px;flex:none;opacity:.85}
+.nav .badge{margin-left:auto;background:var(--crit);color:#fff;font-size:10.5px;font-weight:600;padding:1px 6px;border-radius:20px;font-family:var(--disp)}
+.nav a.on .badge{background:var(--crit)}
+.rail-foot{margin-top:auto;padding:12px;border-top:1px solid var(--line)}
+.who{display:flex;align-items:center;gap:9px;padding:6px}
+.av{width:26px;height:26px;border-radius:50%;background:var(--sunken);border:1px solid var(--line);display:grid;place-items:center;font-family:var(--disp);font-size:10.5px;font-weight:700;color:var(--ink-2);flex:none}
+.main{display:flex;flex-direction:column;min-width:0}
+.topbar{position:sticky;top:0;z-index:30;background:var(--bg);background:color-mix(in srgb,var(--bg) 88%,transparent);backdrop-filter:blur(10px);border-bottom:1px solid var(--line);display:flex;align-items:center;gap:12px;padding:0 22px;height:53px}
+.crumb{display:flex;align-items:center;gap:7px;font-size:13px;color:var(--ink-3);min-width:0}
+.crumb b{color:var(--ink);font-weight:600}
+.crumb span{opacity:.55}
+.topbar .sp{margin-left:auto}
+.view{padding:22px 22px 60px;max-width:1500px;width:100%}
+.view.flush{padding:0;max-width:none;flex:1;min-height:0}
+
+/* ================= PRIMITIVES ================= */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:7px 13px;border-radius:var(--r-sm);border:1px solid var(--line-2);background:var(--panel);color:var(--ink);font-size:13px;font-weight:500;transition:background .12s,border-color .12s,opacity .12s;white-space:nowrap}
+.btn:hover{background:var(--panel-2);border-color:var(--ink-3)}
+.btn svg{width:14px;height:14px}
+.btn.pri{background:var(--accent);border-color:var(--accent);color:var(--accent-ink);font-weight:600}
+.btn.pri:hover{background:var(--accent-hov);border-color:var(--accent-hov)}
+.btn.ghost{border-color:transparent;background:transparent;color:var(--ink-2)}
+.btn.ghost:hover{background:var(--panel-2);color:var(--ink)}
+.btn.danger{color:var(--crit);border-color:var(--crit-line)}
+.btn.danger:hover{background:var(--crit-soft)}
+.btn.sm{padding:4px 9px;font-size:12px;border-radius:5px}
+.btn.lg{padding:10px 18px;font-size:14px}
+.btn:disabled{opacity:.4;cursor:not-allowed}
+.btn-row{display:flex;gap:8px;flex-wrap:wrap}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--shadow)}
+.pad{padding:16px}
+.chip{display:inline-flex;align-items:center;gap:5px;padding:2px 8px;border-radius:20px;font-size:11.5px;font-weight:600;font-family:var(--disp);letter-spacing:.005em;border:1px solid transparent;white-space:nowrap}
+.chip .dot{width:5px;height:5px;border-radius:50%;background:currentColor;flex:none}
+.c-ok{background:var(--ok-soft);color:var(--ok);border-color:var(--ok-line)}
+.c-run{background:var(--accent-soft);color:var(--accent);border-color:var(--accent-line)}
+.c-warn{background:var(--warn-soft);color:var(--warn);border-color:var(--warn-line)}
+.c-crit{background:var(--crit-soft);color:var(--crit);border-color:var(--crit-line)}
+.c-hand{background:var(--hand-soft);color:var(--hand);border-color:var(--hand-line)}
+.c-idle{background:var(--sunken);color:var(--ink-3);border-color:var(--line)}
+.meter{height:5px;background:var(--sunken);border-radius:5px;overflow:hidden;position:relative}
+.meter i{display:block;height:100%;background:var(--accent);border-radius:5px;transition:width .5s cubic-bezier(.4,0,.2,1)}
+.meter.ok i{background:var(--ok)}
+.meter.warn i{background:var(--warn)}
+.meter.crit i{background:var(--crit)}
+.sec-head{display:flex;align-items:baseline;gap:12px;margin-bottom:12px}
+.sec-head .sp{margin-left:auto}
+.split{display:flex;gap:8px;align-items:center}
+.kv{display:grid;grid-template-columns:minmax(110px,auto) 1fr;gap:7px 14px;font-size:13px}
+.kv dt{color:var(--ink-3)}
+.kv dd{margin:0;color:var(--ink);word-break:break-word}
+.divide{height:1px;background:var(--line);border:0;margin:0}
+.scroll-x{overflow-x:auto}
+</style>
+<style>
+/* ================= DASHBOARD ================= */
+.tiles{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:20px}
+.tile{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:14px 15px 13px;display:flex;flex-direction:column;gap:9px;position:relative;overflow:hidden}
+.tile .top{display:flex;align-items:center;gap:7px}
+.tile .top .ic{width:22px;height:22px;border-radius:5px;display:grid;place-items:center;flex:none}
+.tile .top .ic svg{width:13px;height:13px}
+.tile .val{font-family:var(--disp);font-size:29px;font-weight:700;line-height:1;letter-spacing:-.03em;font-variant-numeric:tabular-nums}
+.tile .sub{font-size:12px;color:var(--ink-3)}
+.tile.attn{border-color:var(--crit-line)}
+.tile.attn .val{color:var(--crit)}
+.spark{display:flex;align-items:flex-end;gap:2px;height:22px;margin-top:2px}
+.spark i{flex:1;background:var(--accent-line);border-radius:1px;min-height:2px;opacity:.55}
+.spark i:last-child{background:var(--accent);opacity:1}
+.grid-2{display:grid;grid-template-columns:1fr 340px;gap:16px;align-items:start}
+
+table.tbl{width:100%;border-collapse:collapse;font-size:13px;min-width:860px}
+.biz b{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+table.tbl th{text-align:left;font-family:var(--disp);font-size:10.5px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3);padding:0 14px 9px;white-space:nowrap;border-bottom:1px solid var(--line)}
+table.tbl td{padding:11px 14px;border-bottom:1px solid var(--line);vertical-align:middle}
+table.tbl tbody tr{cursor:pointer;transition:background .1s}
+table.tbl tbody tr:hover{background:var(--panel-2)}
+table.tbl tbody tr:last-child td{border-bottom:0}
+.biz{display:flex;align-items:center;gap:9px;min-width:0}
+.biz .sq{width:26px;height:26px;border-radius:6px;display:grid;place-items:center;font-family:var(--disp);font-size:10.5px;font-weight:700;flex:none;background:var(--accent-soft);color:var(--accent);border:1px solid var(--accent-line)}
+.biz b{font-weight:600;display:block;line-height:1.3}
+.biz small{color:var(--ink-3);font-size:11.5px;font-family:var(--mono)}
+.prog-cell{display:flex;align-items:center;gap:8px;min-width:104px}
+.prog-cell .meter{flex:1}
+.prog-cell span{font-size:11.5px;color:var(--ink-2);font-variant-numeric:tabular-nums;width:30px;text-align:right}
+.rowact{opacity:0;transition:opacity .12s}
+tr:hover .rowact{opacity:1}
+
+.feed{display:flex;flex-direction:column}
+.feed-item{display:flex;gap:11px;padding:10px 15px;border-bottom:1px solid var(--line)}
+.feed-item:last-child{border-bottom:0}
+.feed-item .fi{width:20px;height:20px;border-radius:5px;display:grid;place-items:center;flex:none;margin-top:1px}
+.feed-item .fi svg{width:11px;height:11px}
+.feed-item .txt{font-size:12.5px;line-height:1.45;min-width:0}
+.feed-item .txt b{font-weight:600}
+.feed-item time{display:block;font-size:11px;color:var(--ink-3);font-family:var(--mono);margin-top:1px}
+
+/* ================= WIZARD ================= */
+.wiz{max-width:840px;margin:0 auto}
+.steps{display:flex;align-items:center;gap:0;margin-bottom:24px}
+.step{display:flex;align-items:center;gap:8px;flex:1;min-width:0}
+.step .n{width:24px;height:24px;border-radius:50%;border:1.5px solid var(--line-2);display:grid;place-items:center;font-family:var(--disp);font-size:11.5px;font-weight:600;color:var(--ink-3);flex:none;background:var(--panel)}
+.step .lbl{font-size:12.5px;color:var(--ink-3);font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.step .bar{flex:1;height:1.5px;background:var(--line);margin:0 10px;min-width:12px}
+.step.on .n{border-color:var(--accent);background:var(--accent);color:var(--accent-ink)}
+.step.on .lbl{color:var(--ink);font-weight:600}
+.step.done .n{border-color:var(--ok);background:var(--ok);color:#fff}
+.step.done .lbl{color:var(--ink-2)}
+.step.done .bar{background:var(--ok-line)}
+.fields{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.f{display:flex;flex-direction:column;gap:5px;min-width:0}
+.f.wide{grid-column:1/-1}
+.f label{font-size:12px;font-weight:600;color:var(--ink-2);display:flex;align-items:center;gap:5px}
+.f label .req{color:var(--crit);font-size:13px;line-height:1}
+.f label .opt{font-weight:400;color:var(--ink-3);font-size:11px}
+.f input,.f select,.f textarea{background:var(--panel);border:1px solid var(--line-2);border-radius:var(--r-sm);padding:8px 10px;font-size:13.5px;width:100%;transition:border-color .12s,box-shadow .12s}
+.f input:focus,.f select:focus,.f textarea:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
+.f input::placeholder,.f textarea::placeholder{color:var(--ink-3);opacity:.75}
+.f textarea{resize:vertical;min-height:70px}
+.f .err{font-size:11.5px;color:var(--crit);display:none}
+.f.bad input,.f.bad select{border-color:var(--crit)}
+.f.bad .err{display:block}
+.f .hint{font-size:11.5px;color:var(--ink-3)}
+.swatch-row{display:flex;gap:8px;align-items:center}
+.f .swatch,.swatch{width:34px;height:34px;border-radius:var(--r-sm);border:1px solid var(--line-2);flex:none;padding:0;cursor:pointer;background:none}
+.drop{border:1.5px dashed var(--line-2);border-radius:var(--r);padding:16px;text-align:center;color:var(--ink-3);font-size:12.5px;background:var(--panel-2)}
+
+.featgrid{display:grid;grid-template-columns:repeat(2,1fr);gap:9px}
+.feat{display:flex;gap:10px;padding:11px 12px;border:1px solid var(--line);border-radius:var(--r);background:var(--panel);cursor:pointer;transition:border-color .12s,background .12s;align-items:flex-start;text-align:left;width:100%}
+.feat:hover{border-color:var(--line-2)}
+.feat.on{border-color:var(--accent);background:var(--accent-soft)}
+.feat .box{width:16px;height:16px;border-radius:4px;border:1.5px solid var(--line-2);flex:none;margin-top:1px;display:grid;place-items:center;background:var(--panel)}
+.feat.on .box{background:var(--accent);border-color:var(--accent)}
+.feat .box svg{width:10px;height:10px;color:var(--accent-ink);opacity:0}
+.feat.on .box svg{opacity:1}
+.feat b{font-size:13px;font-weight:600;display:block;line-height:1.3}
+.feat small{color:var(--ink-3);font-size:11.5px;line-height:1.4;display:block;margin-top:2px}
+.feat .tag{font-family:var(--disp);font-size:9.5px;font-weight:600;letter-spacing:.07em;text-transform:uppercase;padding:1px 5px;border-radius:3px;margin-left:6px;vertical-align:1px}
+.tag-rec{background:var(--accent-soft);color:var(--accent);border:1px solid var(--accent-line)}
+.tag-man{background:var(--hand-soft);color:var(--hand);border:1px solid var(--hand-line)}
+.rec-bar{display:flex;gap:12px;align-items:flex-start;padding:13px 14px;border:1px solid var(--accent-line);background:var(--accent-soft);border-radius:var(--r);margin-bottom:16px}
+.rec-bar .ai{width:26px;height:26px;border-radius:7px;background:var(--accent);color:var(--accent-ink);display:grid;place-items:center;flex:none}
+.rec-bar .ai svg{width:15px;height:15px}
+.sw{position:relative;width:38px;height:21px;border-radius:20px;background:var(--line-2);flex:none;transition:background .16s;cursor:pointer;border:none;padding:0}
+.sw::after{content:"";position:absolute;top:2.5px;left:2.5px;width:16px;height:16px;border-radius:50%;background:#fff;transition:transform .16s;box-shadow:0 1px 3px rgba(0,0,0,.3)}
+.sw.on{background:var(--accent)}
+.sw.on::after{transform:translateX(17px)}
+.wiz-foot{display:flex;align-items:center;gap:10px;margin-top:20px;padding-top:16px;border-top:1px solid var(--line)}
+.wiz-foot .sp{margin-left:auto}
+
+/* ================= PLAN ================= */
+.plan-hero{display:flex;gap:14px;padding:17px 18px;border:1px solid var(--accent-line);background:var(--accent-soft);border-radius:var(--r-lg);margin-bottom:18px}
+.plan-hero .ai{width:34px;height:34px;border-radius:9px;background:var(--accent);color:var(--accent-ink);display:grid;place-items:center;flex:none}
+.plan-hero .ai svg{width:19px;height:19px}
+.plan-stats{display:flex;gap:22px;margin-top:12px;flex-wrap:wrap}
+.plan-stats div{display:flex;flex-direction:column;gap:1px}
+.plan-stats b{font-family:var(--disp);font-size:19px;font-weight:700;letter-spacing:-.02em;font-variant-numeric:tabular-nums}
+.ptask{display:flex;gap:12px;padding:13px 15px;border-bottom:1px solid var(--line);align-items:flex-start}
+.ptask:last-child{border-bottom:0}
+.ptask .idx{font-family:var(--mono);font-size:11px;color:var(--ink-3);width:20px;flex:none;padding-top:2px;text-align:right}
+.ptask .body{flex:1;min-width:0}
+.ptask .body b{font-size:13.5px;font-weight:600}
+.ptask .body p{font-size:12.5px;color:var(--ink-2);margin-top:2px;line-height:1.45}
+.ptask .metaline{display:flex;gap:14px;flex-wrap:wrap;margin-top:7px;font-size:11.5px;color:var(--ink-3);align-items:center}
+.ptask .metaline .mono{font-size:11px}
+.conf{display:inline-flex;align-items:center;gap:5px}
+.conf .bars{display:flex;gap:1.5px}
+.conf .bars i{width:3px;height:9px;border-radius:1px;background:var(--line-2)}
+.conf .bars i.f{background:var(--ok)}
+.conf.mid .bars i.f{background:var(--warn)}
+.conf.low .bars i.f{background:var(--crit)}
+.ptask .right{display:flex;flex-direction:column;align-items:flex-end;gap:6px;flex:none}
+
+/* ================= WORKSPACE ================= */
+.ws{display:grid;grid-template-columns:270px 1fr var(--insp);height:calc(100vh - 53px);min-height:0}
+.ws-col{display:flex;flex-direction:column;min-height:0;min-width:0}
+.ws-col.left{border-right:1px solid var(--line);background:var(--panel)}
+.ws-col.right{border-left:1px solid var(--line);background:var(--panel)}
+.ws-head{padding:13px 15px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:8px;flex:none;min-height:47px}
+.ws-head .sp{margin-left:auto}
+.ws-body{overflow-y:auto;flex:1;min-height:0}
+
+/* --- the run line: a fence line of task nodes --- */
+.runline{padding:12px 14px 20px;position:relative}
+.rl-group{padding-top:12px}
+.rl-group:first-child{padding-top:0}
+.rl-group .eyebrow{padding:0 0 7px 30px}
+.node{display:flex;gap:11px;padding:6px 8px 6px 0;position:relative;cursor:pointer;border-radius:var(--r-sm);align-items:flex-start;width:100%;text-align:left}
+.node:hover{background:var(--panel-2)}
+.node .gut{width:22px;flex:none;display:flex;justify-content:center;position:relative;padding-top:1px}
+.node .gut::before{content:"";position:absolute;left:50%;top:16px;bottom:-13px;width:1.5px;background:var(--line);transform:translateX(-50%)}
+.node:last-child .gut::before{display:none}
+.node.done .gut::before{background:var(--ok-line)}
+.dotn{width:13px;height:13px;border-radius:50%;border:1.5px solid var(--line-2);background:var(--panel);z-index:1;display:grid;place-items:center;flex:none}
+.dotn svg{width:8px;height:8px;opacity:0}
+.node.done .dotn{background:var(--ok);border-color:var(--ok);color:#fff}
+.node.done .dotn svg{opacity:1}
+.node.run .dotn{border-color:var(--accent);background:var(--accent);box-shadow:0 0 0 3px var(--accent-soft);animation:pulse 1.6s ease-in-out infinite}
+.node.fail .dotn{background:var(--crit);border-color:var(--crit);color:#fff}
+.node.fail .dotn svg{opacity:1}
+.node.hand .dotn{border-radius:3px;background:var(--hand);border-color:var(--hand);color:#fff}
+.node.hand .dotn svg{opacity:1}
+.node.wait .dotn{border-color:var(--warn);background:var(--warn-soft);box-shadow:0 0 0 3px var(--warn-soft)}
+.node.skip .dotn{background:var(--sunken);border-style:dashed}
+@keyframes pulse{0%,100%{box-shadow:0 0 0 3px var(--accent-soft)}50%{box-shadow:0 0 0 6px transparent}}
+.node .nm{font-size:13px;color:var(--ink-2);line-height:1.35;padding-top:0;min-width:0;flex:1}
+.node.done .nm{color:var(--ink-2)}
+.node.run .nm{color:var(--ink);font-weight:600}
+.node.fail .nm{color:var(--crit);font-weight:600}
+.node.hand .nm{color:var(--hand);font-weight:600}
+.node.pend .nm{color:var(--ink-3)}
+.node.skip .nm{color:var(--ink-3);text-decoration:line-through;text-decoration-thickness:1px}
+.node.sel{background:var(--accent-soft)}
+.node .tail{font-family:var(--mono);font-size:10.5px;color:var(--ink-3);flex:none;padding-top:1px}
+
+/* --- center: agent activity --- */
+.agent-now{padding:16px 20px;border-bottom:1px solid var(--line);display:flex;gap:13px;background:var(--panel-2);flex:none}
+.agent-now .ai{width:32px;height:32px;border-radius:9px;background:var(--accent);color:var(--accent-ink);display:grid;place-items:center;flex:none;position:relative}
+.agent-now .ai svg{width:18px;height:18px}
+.agent-now.working .ai::after{content:"";position:absolute;inset:-4px;border-radius:12px;border:1.5px solid var(--accent);opacity:.35;animation:halo 2s ease-out infinite}
+@keyframes halo{0%{transform:scale(.9);opacity:.5}100%{transform:scale(1.25);opacity:0}}
+.agent-now h3{font-size:14px}
+.agent-now p{font-size:13.5px;color:var(--ink-2);margin-top:3px;max-width:64ch;line-height:1.5}
+.thinking{display:inline-flex;align-items:center;gap:5px;font-size:11.5px;color:var(--accent);font-weight:600;font-family:var(--disp);margin-top:8px}
+.thinking i{width:4px;height:4px;border-radius:50%;background:var(--accent);animation:blink 1.4s infinite}
+.thinking i:nth-child(2){animation-delay:.2s}
+.thinking i:nth-child(3){animation-delay:.4s}
+@keyframes blink{0%,80%,100%{opacity:.25}40%{opacity:1}}
+.logwrap{flex:1;overflow-y:auto;min-height:0;padding:14px 20px 30px;background:var(--bg)}
+.logbar{display:flex;align-items:center;gap:10px;padding:8px 20px;border-bottom:1px solid var(--line);background:var(--panel);flex:none}
+.logbar .sp{margin-left:auto}
+.logline{display:flex;gap:11px;padding:4.5px 0;font-size:13px;line-height:1.5;align-items:flex-start;animation:slidein .25s ease-out}
+@keyframes slidein{from{opacity:0;transform:translateY(3px)}to{opacity:1;transform:none}}
+.logline time{font-family:var(--mono);font-size:11px;color:var(--ink-3);flex:none;padding-top:2px;width:62px;font-variant-numeric:tabular-nums}
+.logline .gl{width:14px;flex:none;display:grid;place-items:center;padding-top:3px}
+.logline .gl svg{width:11px;height:11px}
+.logline .m{min-width:0;flex:1;color:var(--ink-2)}
+.logline.ok .gl{color:var(--ok)}
+.logline.run .gl{color:var(--accent)}
+.logline.run .m{color:var(--ink)}
+.logline.warnl .gl{color:var(--warn)}
+.logline.faill .gl{color:var(--crit)}
+.logline.faill .m{color:var(--crit);font-weight:500}
+.logline.handl .gl{color:var(--hand)}
+.logline.handl .m{color:var(--hand)}
+.logline .tech{display:none;font-family:var(--mono);font-size:11.5px;color:var(--ink-3);background:var(--panel);border:1px solid var(--line);border-left:2px solid var(--accent-line);border-radius:0 var(--r-sm) var(--r-sm) 0;padding:7px 10px;margin-top:5px;white-space:pre-wrap;overflow-x:auto;line-height:1.55}
+body.tech .logline .tech{display:block}
+.log-head{font-family:var(--disp);font-size:10.5px;font-weight:600;letter-spacing:.11em;text-transform:uppercase;color:var(--ink-3);margin:16px 0 6px;padding-top:12px;border-top:1px solid var(--line)}
+.log-head:first-child{margin-top:0;padding-top:0;border-top:0}
+.stage-chips{display:flex;flex-wrap:wrap;gap:5px;margin:6px 0 2px}
+.stage-chips .sc{font-size:11.5px;font-family:var(--mono);padding:2px 7px;border-radius:4px;background:var(--panel);border:1px solid var(--line);color:var(--ink-2)}
+
+/* --- right inspector --- */
+.insp-sec{padding:14px 15px;border-bottom:1px solid var(--line)}
+.insp-sec:last-child{border-bottom:0}
+.insp-sec .eyebrow{margin-bottom:9px;display:block}
+.big-prog{display:flex;align-items:baseline;gap:7px;margin-bottom:7px}
+.big-prog b{font-family:var(--disp);font-size:26px;font-weight:700;letter-spacing:-.03em;font-variant-numeric:tabular-nums;line-height:1}
+.perm{display:flex;align-items:center;gap:8px;padding:5px 0;font-size:12.5px;color:var(--ink-2)}
+.perm svg{width:13px;height:13px;flex:none;color:var(--ok)}
+.perm.no svg{color:var(--hand)}
+.alertbox{border:1px solid var(--warn-line);background:var(--warn-soft);border-radius:var(--r);padding:11px 12px}
+.alertbox.crit{border-color:var(--crit-line);background:var(--crit-soft)}
+.alertbox.hand{border-color:var(--hand-line);background:var(--hand-soft)}
+.alertbox h4{font-size:12.5px;margin-bottom:4px}
+.alertbox p{font-size:12px;color:var(--ink-2);line-height:1.45}
+.ctrl-grid{display:grid;grid-template-columns:1fr 1fr;gap:7px}
+.ctrl-grid .btn{width:100%}
+.ctrl-grid .full{grid-column:1/-1}
+
+/* ================= VERIFY / COMPLETE ================= */
+.ver-hero{display:grid;grid-template-columns:auto 1fr;gap:22px;align-items:center;padding:20px 22px}
+.ring{position:relative;width:104px;height:104px;flex:none}
+.ring svg{transform:rotate(-90deg);width:104px;height:104px}
+.ring .tr{fill:none;stroke:var(--sunken);stroke-width:9}
+.ring .vl{fill:none;stroke:var(--warn);stroke-width:9;stroke-linecap:round;transition:stroke-dashoffset 1.1s cubic-bezier(.4,0,.2,1)}
+.ring .lab{position:absolute;inset:0;display:grid;place-items:center;text-align:center}
+.ring .lab b{font-family:var(--disp);font-size:25px;font-weight:700;letter-spacing:-.03em;line-height:1;font-variant-numeric:tabular-nums}
+.ring .lab span{font-size:10px;color:var(--ink-3);text-transform:uppercase;letter-spacing:.09em;font-family:var(--disp);font-weight:600}
+.check{display:flex;gap:11px;padding:11px 15px;border-bottom:1px solid var(--line);cursor:pointer;align-items:flex-start;width:100%;text-align:left;transition:background .1s}
+.check:hover{background:var(--panel-2)}
+.check:last-of-type{border-bottom:0}
+.check .ci{width:17px;height:17px;border-radius:50%;display:grid;place-items:center;flex:none;margin-top:1px}
+.check .ci svg{width:10px;height:10px;color:#fff}
+.check.pass .ci{background:var(--ok)}
+.check.warnc .ci{background:var(--warn)}
+.check.failc .ci{background:var(--crit)}
+.check b{font-size:13px;font-weight:500;display:block}
+.check.warnc b,.check.failc b{font-weight:600}
+.check .sub{font-size:11.5px;color:var(--ink-3);margin-top:1px}
+.check .caret{margin-left:auto;color:var(--ink-3);flex:none;transition:transform .16s}
+.check.open .caret{transform:rotate(90deg)}
+.check-detail{padding:0 15px 14px 41px;border-bottom:1px solid var(--line);background:var(--panel-2)}
+.check-detail .inner{border-left:2px solid var(--line-2);padding:2px 0 2px 13px;font-size:12.5px;color:var(--ink-2);line-height:1.55}
+.check-detail pre{font-family:var(--mono);font-size:11.5px;background:var(--panel);border:1px solid var(--line);border-radius:var(--r-sm);padding:9px 11px;overflow-x:auto;margin:9px 0 0;color:var(--ink-2);line-height:1.55}
+
+.done-hero{text-align:center;padding:36px 22px 26px;max-width:620px;margin:0 auto}
+.done-hero .seal{width:60px;height:60px;border-radius:16px;background:var(--ok);color:#fff;display:grid;place-items:center;margin:0 auto 16px}
+.done-hero .seal svg{width:31px;height:31px}
+.sum-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(178px,1fr));gap:10px;margin:22px 0}
+.sum{border:1px solid var(--line);border-radius:var(--r);padding:12px 13px;background:var(--panel);text-align:left}
+.sum b{font-family:var(--disp);font-size:17px;font-weight:700;display:block;letter-spacing:-.02em}
+.sum span{font-size:11.5px;color:var(--ink-3)}
+
+/* ================= AUDIT ================= */
+.audit-row{cursor:pointer}
+.audit-detail td{background:var(--panel-2);padding:0 !important}
+.audit-detail .inner{padding:13px 15px 15px 44px}
+.audit-detail pre{font-family:var(--mono);font-size:11.5px;background:var(--panel);border:1px solid var(--line);border-radius:var(--r-sm);padding:11px 13px;overflow-x:auto;margin:0;line-height:1.6;color:var(--ink-2)}
+.filters{display:flex;gap:7px;flex-wrap:wrap;align-items:center}
+.filters .btn.sm.on{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.srch{position:relative;flex:1;max-width:260px}
+.srch input{width:100%;padding:6px 10px 6px 29px;border:1px solid var(--line-2);border-radius:var(--r-sm);background:var(--panel);font-size:12.5px}
+.srch svg{position:absolute;left:9px;top:50%;transform:translateY(-50%);width:13px;height:13px;color:var(--ink-3)}
+
+/* ================= CHAT ================= */
+.chat{position:fixed;top:0;right:0;bottom:0;width:392px;max-width:100vw;background:var(--panel);border-left:1px solid var(--line);box-shadow:var(--shadow-lg);display:flex;flex-direction:column;z-index:60;transform:translateX(100%);transition:transform .24s cubic-bezier(.4,0,.2,1)}
+.chat.open{transform:none}
+.chat-head{padding:12px 15px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:9px;flex:none}
+.chat-head .ai{width:26px;height:26px;border-radius:7px;background:var(--accent);color:var(--accent-ink);display:grid;place-items:center;flex:none}
+.chat-head .ai svg{width:15px;height:15px}
+.chat-head .sp{margin-left:auto}
+.msgs{flex:1;overflow-y:auto;padding:15px;display:flex;flex-direction:column;gap:14px}
+.msg{display:flex;gap:9px;animation:slidein .22s ease-out}
+.msg .mi{width:22px;height:22px;border-radius:6px;display:grid;place-items:center;flex:none;font-family:var(--disp);font-size:9.5px;font-weight:700}
+.msg.a .mi{background:var(--accent);color:var(--accent-ink)}
+.msg.a .mi svg{width:13px;height:13px}
+.msg.u .mi{background:var(--sunken);color:var(--ink-2);border:1px solid var(--line)}
+.msg .mb{font-size:13px;line-height:1.55;min-width:0;flex:1;color:var(--ink)}
+.msg.u .mb{color:var(--ink-2)}
+.msg .mb p+p{margin-top:8px}
+.msg .mb code{font-family:var(--mono);font-size:12px;background:var(--sunken);padding:1px 4px;border-radius:3px}
+.msg .mb ul{margin:7px 0 0;padding-left:16px}
+.msg .mb li{margin-bottom:3px}
+.msg-act{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px}
+.chips{display:flex;gap:6px;flex-wrap:wrap;padding:0 15px 10px}
+.chips button{font-size:11.5px;padding:4px 9px;border:1px solid var(--line-2);border-radius:20px;color:var(--ink-2);background:var(--panel);transition:border-color .12s,color .12s}
+.chips button:hover{border-color:var(--accent);color:var(--accent)}
+.chat-foot{padding:11px 13px;border-top:1px solid var(--line);flex:none}
+.composer{display:flex;gap:7px;align-items:flex-end;border:1px solid var(--line-2);border-radius:var(--r);padding:6px 6px 6px 11px;background:var(--panel);transition:border-color .12s}
+.composer:focus-within{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
+.composer textarea{flex:1;border:0;background:none;resize:none;font-size:13px;padding:4px 0;max-height:96px;outline:none;line-height:1.45}
+.composer .send{width:28px;height:28px;border-radius:var(--r-sm);background:var(--accent);color:var(--accent-ink);display:grid;place-items:center;flex:none}
+.composer .send svg{width:14px;height:14px}
+.fab{position:fixed;right:20px;bottom:20px;z-index:50;display:flex;align-items:center;gap:8px;padding:9px 15px;border-radius:26px;background:var(--accent);color:var(--accent-ink);box-shadow:var(--shadow-lg);font-weight:600;font-size:13px;font-family:var(--disp)}
+.fab svg{width:16px;height:16px}
+
+/* ================= MODAL ================= */
+.scrim{position:fixed;inset:0;background:var(--scrim);z-index:70;display:grid;place-items:center;padding:20px;backdrop-filter:blur(2px);animation:fade .18s ease-out}
+@keyframes fade{from{opacity:0}to{opacity:1}}
+.modal{background:var(--panel);border:1px solid var(--line);border-radius:var(--r-lg);box-shadow:var(--shadow-lg);width:min(560px,100%);max-height:86vh;overflow-y:auto;animation:pop .22s cubic-bezier(.2,.8,.3,1)}
+@keyframes pop{from{opacity:0;transform:translateY(10px) scale(.985)}to{opacity:1;transform:none}}
+.modal-head{padding:17px 19px 13px;display:flex;gap:12px;align-items:flex-start}
+.modal-head .mi{width:32px;height:32px;border-radius:9px;display:grid;place-items:center;flex:none}
+.modal-head .mi svg{width:17px;height:17px}
+.modal-body{padding:0 19px 17px}
+.modal-foot{padding:14px 19px;border-top:1px solid var(--line);display:flex;gap:8px;align-items:center;background:var(--panel-2);border-radius:0 0 var(--r-lg) var(--r-lg)}
+.modal-foot .sp{margin-left:auto}
+.spec{border:1px solid var(--line);border-radius:var(--r);overflow:hidden;margin-top:12px}
+.spec .sh{padding:7px 11px;background:var(--panel-2);border-bottom:1px solid var(--line);display:flex;align-items:center;gap:7px}
+.spec pre{font-family:var(--mono);font-size:11.5px;padding:11px;margin:0;overflow-x:auto;color:var(--ink-2);line-height:1.6}
+.toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%);z-index:90;background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:22px;font-size:13px;font-weight:500;box-shadow:var(--shadow-lg);display:flex;align-items:center;gap:8px;animation:pop .22s ease-out}
+.toast svg{width:14px;height:14px}
+
+/* ================= RESPONSIVE ================= */
+.mobtabs{display:none}
+@media (max-width:1180px){
+  .ws{grid-template-columns:230px 1fr}
+  .ws-col.right{position:fixed;top:53px;right:0;bottom:0;width:322px;z-index:40;transform:translateX(100%);transition:transform .22s ease;box-shadow:var(--shadow-lg)}
+  .ws-col.right.open{transform:none}
+  .grid-2{grid-template-columns:1fr}
+}
+@media (max-width:1240px){.tiles{grid-template-columns:repeat(3,1fr)}}
+@media (max-width:900px){
+  .tiles{grid-template-columns:repeat(2,1fr)}
+  .fields{grid-template-columns:1fr}
+  .featgrid{grid-template-columns:1fr}
+}
+@media (max-width:760px){
+  :root{--rail:0px}
+  .app{grid-template-columns:1fr}
+  .rail{position:fixed;left:0;top:0;bottom:0;width:252px;z-index:80;transform:translateX(-100%);transition:transform .22s ease;box-shadow:var(--shadow-lg)}
+  .rail.open{transform:none}
+  .menu-btn{display:inline-grid !important}
+  .view{padding:15px 14px 80px}
+  .topbar{padding:0 13px}
+  .step .lbl{display:none}
+  .step .bar{margin:0 5px}
+  .ver-hero{grid-template-columns:1fr;justify-items:center;text-align:center;gap:14px}
+  .chat{width:100%}
+  .fab span{display:none}
+  .fab{padding:13px;border-radius:50%}
+  .ws{display:block;height:auto}
+  .ws-col.left,.ws-col.right{position:static;transform:none;border:0;box-shadow:none;width:auto;border-bottom:1px solid var(--line)}
+  .ws-col.left,.ws-col.right{display:none}
+  .ws-col.left.mob,.ws-col.right.mob,.ws-col.mid.mob{display:flex}
+  .ws-body{overflow:visible}
+  .logwrap{overflow:visible}
+  .mobtabs{display:flex;gap:4px;padding:7px 13px;border-bottom:1px solid var(--line);background:var(--panel);position:sticky;top:53px;z-index:20}
+  .mobtabs button{flex:1;padding:6px;font-size:12px;font-weight:600;border-radius:var(--r-sm);color:var(--ink-3);font-family:var(--disp)}
+  .mobtabs button.on{background:var(--accent-soft);color:var(--accent)}
+  .grid-2{grid-template-columns:1fr}
+  .hide-sm{display:none !important}
+}
+.menu-btn{display:none}
+.gh{display:flex;align-items:stretch;border-bottom:1px solid transparent}
+.gh.open{border-bottom-color:var(--line)}
+.gtick{flex:none;width:38px;display:grid;place-items:center;background:none;border:0;cursor:pointer}
+.gtick::before{content:"";width:17px;height:17px;border-radius:5px;border:1.5px solid var(--line-2);position:absolute}
+.gtick{position:relative;color:#fff}
+.gtick svg{position:relative;z-index:1}
+.gtick.on::before{background:var(--ok);border-color:var(--ok)}
+.gtick.part::before{background:var(--accent-soft);border-color:var(--accent)}
+.gtick i{position:relative;z-index:1;width:7px;height:2px;background:var(--accent);border-radius:2px;display:block}
+.gmain{flex:1;min-width:0;display:flex;gap:10px;align-items:center;padding:13px 15px 13px 0;background:none;border:0;text-align:left;cursor:pointer}
+.gmain:hover b{color:var(--accent)}
+.gmain b{font-family:var(--disp);font-size:14px;font-weight:600;display:block}
+.gsrc{font-size:11px;color:var(--ink-3);font-family:var(--mono);display:block;margin-top:1px}
+.gmain .caret{color:var(--ink-3);transition:transform .16s}
+.gh.open .caret{transform:rotate(90deg)}
+.gdesc{font-size:12.5px;color:var(--ink-2);padding:12px 15px 10px;line-height:1.5;max-width:72ch}
+.item{display:flex;gap:11px;padding:9px 15px;border-top:1px solid var(--line);align-items:flex-start}
+.item.conflict{background:var(--crit-soft)}
+.tick{flex:none;width:18px;height:18px;border-radius:5px;border:1.5px solid var(--line-2);background:var(--panel);display:grid;place-items:center;cursor:pointer;margin-top:1px;color:#fff;transition:background .12s,border-color .12s,transform .1s;padding:0}
+.tick:hover{border-color:var(--accent);transform:scale(1.08)}
+.tick.on{background:var(--ok);border-color:var(--ok)}
+.ibody{flex:1;min-width:0}
+.ibody b{font-size:13px;font-weight:500;display:block;line-height:1.35}
+.ibody b.checked{color:var(--ink-2)}
+.ihint{font-size:11.5px;color:var(--ink-3);display:block;margin-top:1px}
+.ifound{font-size:11.5px;display:flex;align-items:flex-start;gap:5px;margin-top:4px;color:var(--crit);line-height:1.45}
+.ifound svg{flex:none;margin-top:2px}
+/* interactive checklist row */
+.srow{display:flex;align-items:stretch;border-bottom:1px solid var(--line)}
+.srow:last-of-type{border-bottom:0}
+.ci-btn{flex:none;display:grid;place-items:center;padding:11px 0 11px 15px;background:none;border:0;cursor:pointer}
+.ci-btn .ci{width:19px;height:19px;border-radius:50%;display:grid;place-items:center;transition:transform .12s}
+.ci-btn:hover .ci{transform:scale(1.15)}
+.ci-btn .ci svg{width:11px;height:11px;color:#fff}
+.row-main{flex:1;min-width:0;display:flex;gap:11px;align-items:center;padding:11px 15px;background:none;border:0;text-align:left;cursor:pointer;transition:background .1s}
+.row-main:hover{background:var(--panel-2)}
+.row-main b{font-size:13px;font-weight:500;display:block}
+.srow.done .row-main b{color:var(--ink-2)}
+.srow.block .row-main b,.srow.human .row-main b{font-weight:600}
+.row-main .sub{font-size:11.5px;color:var(--ink-3);margin-top:1px;display:block}
+.row-main .caret{color:var(--ink-3);flex:none;transition:transform .16s}
+.srow.open .row-main .caret{transform:rotate(90deg)}
+.status-set{display:flex;flex-wrap:wrap;gap:5px;margin-top:11px}
+.status-set button{font-size:11.5px;padding:3px 9px;border:1px solid var(--line-2);border-radius:20px;background:var(--panel);color:var(--ink-2);font-family:var(--disp);font-weight:600;transition:border-color .12s,color .12s}
+.status-set button:hover{border-color:var(--accent);color:var(--accent)}
+.status-set button.on{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+/* notes */
+.note{padding:11px 15px;border-bottom:1px solid var(--line)}
+.note:last-child{border-bottom:0}
+.note .nhead{display:flex;align-items:baseline;gap:8px;margin-bottom:3px}
+.note .nhead b{font-size:12px;font-weight:600}
+.note .nhead time{font-size:11px;color:var(--ink-3);font-family:var(--mono)}
+.note .nhead .acts{margin-left:auto;display:flex;gap:4px;opacity:0;transition:opacity .12s}
+.note:hover .nhead .acts{opacity:1}
+.note p{font-size:12.5px;color:var(--ink-2);line-height:1.5;white-space:pre-wrap}
+.note textarea{width:100%;background:var(--panel);border:1px solid var(--accent);border-radius:var(--r-sm);padding:7px 9px;font-size:12.5px;resize:vertical;min-height:58px;outline:none}
+.note-new{padding:12px 15px;border-top:1px solid var(--line);background:var(--panel-2);border-radius:0 0 var(--r) var(--r)}
+.note-new textarea{width:100%;background:var(--panel);border:1px solid var(--line-2);border-radius:var(--r-sm);padding:8px 10px;font-size:12.5px;resize:vertical;min-height:60px;transition:border-color .12s}
+.note-new textarea:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
+.snap{display:flex;gap:14px;padding:15px;border-bottom:1px solid var(--line);align-items:flex-start}
+.snap:last-of-type{border-bottom:0}
+.snap .sv{font-family:var(--disp);font-size:13px;font-weight:700;padding:3px 9px;border-radius:var(--r-sm);background:var(--accent-soft);color:var(--accent);border:1px solid var(--accent-line);flex:none}
+.snap.old .sv{background:var(--sunken);color:var(--ink-3);border-color:var(--line)}
+.manifest{display:flex;gap:14px;flex-wrap:wrap;margin-top:8px}
+.manifest div{display:flex;flex-direction:column}
+.manifest b{font-family:var(--disp);font-size:15px;font-weight:700;font-variant-numeric:tabular-nums}
+.manifest span{font-size:11px;color:var(--ink-3)}
+</style>
+</head>
+<body>
+<div class="app">
+  <aside class="rail" id="rail">
+    <div class="brand">
+      <div class="mark"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 21V8l3-4 3 4v13M14 21V8l3-4 3 4v13"/><path d="M2 12h20M2 16.5h20"/></svg></div>
+      <div class="brand-txt"><b>FenceOS</b><span>Setup Console</span></div>
+    </div>
+    <nav class="nav" id="nav"></nav>
+    <div class="rail-foot">
+      <a href="/blueprint" style="display:flex;align-items:center;gap:7px;padding:6px;margin-bottom:2px;font-size:12px;color:var(--ink-3);text-decoration:none;border-radius:6px" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--ink-3)'"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:14px"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg><span>Design blueprint</span></a>
+      <div class="who">
+        <div class="av">RM</div>
+        <div style="min-width:0"><div style="font-size:12.5px;font-weight:600">Ryan Malaluan</div><div style="font-size:11px" class="dim">fenceOS Tech</div></div>
+      </div>
+    </div>
+  </aside>
+
+  <div class="main">
+    <header class="topbar">
+      <button class="btn ghost menu-btn" id="menuBtn" style="padding:6px" aria-label="Menu"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="width:17px;height:17px"><path d="M3 6h18M3 12h18M3 18h18"/></svg></button>
+      <div class="crumb" id="crumb"></div>
+      <div class="sp"></div>
+      <div id="topActions" class="split"></div>
+      <button class="btn ghost" id="themeBtn" style="padding:6px 8px" title="Toggle theme" aria-label="Toggle theme"></button>
+      <button class="btn" id="chatBtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg><span class="hide-sm">Ask the agent</span></button>
+    </header>
+    <main id="view" class="view"></main>
+  </div>
+</div>
+
+<aside class="chat" id="chat" aria-label="Agent chat">
+  <div class="chat-head">
+    <div class="ai"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v3M5.6 5.6l2.1 2.1M3 12h3M18 12h3M16.3 7.7l2.1-2.1"/><rect x="7" y="10" width="10" height="9" rx="2.5"/><circle cx="10" cy="14.5" r="1" fill="currentColor" stroke="none"/><circle cx="14" cy="14.5" r="1" fill="currentColor" stroke="none"/></svg></div>
+    <div><div style="font-family:var(--disp);font-weight:600;font-size:13.5px">Setup Agent</div><div id="chatCtx" style="font-size:11px" class="dim">Idle</div></div>
+    <div class="sp"></div>
+    <button class="btn ghost" id="chatClose" style="padding:5px" aria-label="Close chat"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="width:16px;height:16px"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
+  </div>
+  <div class="msgs" id="msgs"></div>
+  <div class="chips" id="chips"></div>
+  <div class="chat-foot">
+    <div class="composer">
+      <textarea id="chatInput" rows="1" placeholder="Ask about this setup&hellip;"></textarea>
+      <button class="send" id="chatSend" aria-label="Send"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg></button>
+    </div>
+  </div>
+</aside>
+
+<button class="fab" id="fab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg><span>Ask the agent</span></button>
+
+<div id="modalRoot"></div>
+<div id="toastRoot"></div>
+<script>
+/* ============================================================
+   FenceOS Setup Console — interactive UI/UX prototype
+   No backend. HighLevel calls are simulated for demonstration.
+   ============================================================ */
+const $ = (s,r)=> (r||document).querySelector(s);
+const $$ = (s,r)=> Array.from((r||document).querySelectorAll(s));
+const esc = s => String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+
+/* ---------- icons ---------- */
+const P = {
+  grid:'<path d="M3 3h7v7H3zM14 3h7v7h-7zM14 14h7v7h-7zM3 14h7v7H3z"/>',
+  layers:'<path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5M2 12l10 5 10-5"/>',
+  bot:'<path d="M12 3v3M5.6 5.6l2.1 2.1M3 12h3M18 12h3M16.3 7.7l2.1-2.1"/><rect x="7" y="10" width="10" height="9" rx="2.5"/><circle cx="10" cy="14.5" r="1" fill="currentColor" stroke="none"/><circle cx="14" cy="14.5" r="1" fill="currentColor" stroke="none"/>',
+  shield:'<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>',
+  list:'<path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/>',
+  pkg:'<path d="M21 16V8l-9-5-9 5v8l9 5 9-5z"/><path d="M3.3 7.5L12 12l8.7-4.5M12 22V12"/>',
+  cog:'<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.6 1.6 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.6 1.6 0 0 0-1.8-.3 1.6 1.6 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.6 1.6 0 0 0-1-1.5 1.6 1.6 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.6 1.6 0 0 0 .3-1.8 1.6 1.6 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.6 1.6 0 0 0 1.5-1 1.6 1.6 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.6 1.6 0 0 0 1.8.3H9a1.6 1.6 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.6 1.6 0 0 0 1 1.5 1.6 1.6 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.6 1.6 0 0 0-.3 1.8V9a1.6 1.6 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.6 1.6 0 0 0-1.5 1z"/>',
+  check:'<path d="M20 6L9 17l-5-5"/>',
+  x:'<path d="M18 6L6 18M6 6l12 12"/>',
+  plus:'<path d="M12 5v14M5 12h14"/>',
+  alert:'<path d="M12 9v4M12 17h.01"/><path d="M10.3 3.9L1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/>',
+  clock:'<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
+  play:'<path d="M6 4l14 8-14 8V4z"/>',
+  pause:'<path d="M7 4h3v16H7zM14 4h3v16h-3z"/>',
+  stop:'<rect x="5" y="5" width="14" height="14" rx="2"/>',
+  redo:'<path d="M21 12a9 9 0 1 1-3-6.7L21 8"/><path d="M21 3v5h-5"/>',
+  skip:'<path d="M5 4l10 8-10 8V4zM19 5v14"/>',
+  hand:'<path d="M18 11V6a2 2 0 0 0-4 0v5M14 10V4a2 2 0 0 0-4 0v7M10 10.5V6a2 2 0 0 0-4 0v9"/><path d="M18 8a2 2 0 1 1 4 0v6a8 8 0 0 1-8 8h-2a8 8 0 0 1-8-8v-1a2 2 0 1 1 4 0"/>',
+  chev:'<path d="M9 18l6-6-6-6"/>',
+  ext:'<path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><path d="M15 3h6v6M10 14L21 3"/>',
+  srch:'<circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/>',
+  sun:'<circle cx="12" cy="12" r="4.5"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>',
+  moon:'<path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/>',
+  arrow:'<path d="M5 12h14M13 6l6 6-6 6"/>',
+  copy:'<rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>',
+  dot:'<circle cx="12" cy="12" r="4" fill="currentColor"/>',
+  phone:'<path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1 1 .4 1.9.7 2.8a2 2 0 0 1-.5 2.1L8.1 9.9a16 16 0 0 0 6 6l1.3-1.2a2 2 0 0 1 2.1-.5c.9.3 1.8.6 2.8.7a2 2 0 0 1 1.7 2z"/>',
+  file:'<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/>'
+};
+const ic=(n,sz)=>`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"${sz?` style="width:${sz}px;height:${sz}px"`:''}>${P[n]||''}</svg>`;
+
+/* ---------- status vocabulary (single source of truth) ---------- */
+const STATUS = {
+  creation:{l:'Subaccount Creation',c:'c-idle'},
+  review:{l:'In Review',c:'c-run'},
+  dns:{l:'Waiting on DNS Records',c:'c-hand'},
+  phonep:{l:'Phone # Pending',c:'c-warn'},
+  a2p:{l:'A2P Approved',c:'c-ok'},
+  done:{l:'Initial Setup Complete',c:'c-ok'},
+  hold:{l:'On Hold',c:'c-idle'},
+  planning:{l:'AI Planning',c:'c-run'},
+  setting_up:{l:'Setting Up',c:'c-run'},
+  verify:{l:'Verification Required',c:'c-warn'}
+};
+const BLOCK = {
+  none:{l:'—',c:'c-idle'},
+  agency:{l:'Us',c:'c-crit'},
+  client:{l:'Client',c:'c-hand'},
+  external:{l:'Carrier',c:'c-warn'}
+};
+const badge = k => `<span class="chip ${STATUS[k].c}"><i class="dot"></i>${STATUS[k].l}</span>`;
+
+/* ---------- seed accounts ---------- */
+const ACCOUNTS = [
+  {id:'loc_7Kq2',name:'Trust N Fences',city:'Corey Schindler',status:'review',prog:100,block:'none',note:'',created:'Apr 20, 2026',days:41,init:'TN'},
+  {id:'loc_9Wt1',name:'RoseBurg Fence',city:'Rick Randleman',status:'a2p',prog:100,block:'none',note:'',created:'Apr 20, 2026',days:26,init:'RF'},
+  {id:'loc_2Hs6',name:'Moore Fencing',city:'Michael Moore',status:'review',prog:94,block:'agency',note:'Google Calendar not connected to staff account',created:'Jun 11, 2026',days:32,init:'MF'},
+  {id:'loc_4Bn9',name:'Langford Fence',city:'Fielding Langford',status:'review',prog:100,block:'client',note:'Waiting on website updates; virtual number not yet purchased',created:'May 2, 2026',days:41,init:'LF'},
+  {id:'loc_5Ld3',name:'Jack Fencing',city:'Chris Gass',status:'phonep',prog:75,block:'agency',note:'Phone number purchase pending',created:'Jun 3, 2026',days:41,init:'JF'},
+  {id:'loc_8Vc4',name:'Family Fencing',city:'Thomas Weaver',status:'dns',prog:56,block:'client',note:'Phone number, DNS records and website updates',created:'May 3, 2026',days:41,init:'FF'},
+  {id:'loc_1Gp7',name:'Done Right Fence',city:'Chris Hearn',status:'dns',prog:44,block:'client',note:'Phone number, preparing DNS records',created:'Jun 18, 2026',days:41,init:'DR'},
+  {id:'loc_3Rt5',name:'Bee Fencing',city:'Anthony Black',status:'phonep',prog:44,block:'client',note:'Not responding; developers lack domain access',created:'Apr 20, 2026',days:41,init:'BF'},
+  {id:'loc_6Yu2',name:'Fence Brothers',city:'Nathan Contant',status:'creation',prog:8,block:'none',note:'',created:'Sep 5, 2026',days:3,init:'FB'}
+];
+
+const FEED = [
+  {k:'ok',t:'10:41',b:'Setup Agent',m:'populated 24 custom values for <b>Fence Brothers</b>'},
+  {k:'hand',t:'10:22',b:'Follow-up',m:'sent the 2nd domain-connection follow-up to <b>Bee Fencing</b> — no reply since Apr 27'},
+  {k:'crit',t:'10:12',b:'A2P Monitor',m:'flagged <b>Jack Fencing</b> — number purchase still pending, campaign cannot be filed'},
+  {k:'warn',t:'09:58',b:'Verification',m:'found 1 check needing review on <b>Moore Fencing</b> — Google Calendar not connected'},
+  {k:'ok',t:'09:31',b:'Setup Agent',m:'built the brand board for <b>Fence Brothers</b> — logo, icon, email banner'},
+  {k:'ok',t:'08:47',b:'Setup Agent',m:'created subaccount <b>Fence Brothers — FenceOS</b>'}
+];
+
+/* ---------- feature catalogue (step 2 of the wizard) ---------- */
+const FEATURES = [
+  {id:'pipeline',n:'CRM Pipeline',d:'Opportunity board with the six FenceOS stages',rec:1},
+  {id:'leads',n:'Lead Management',d:'Contact intake, source tagging, duplicate merge',rec:1},
+  {id:'forms',n:'Forms',d:'Estimate request and site-survey intake forms',rec:1},
+  {id:'calendars',n:'Calendars',d:'Estimate and install calendars with team assignment',rec:1,manual:1},
+  {id:'booking',n:'Appointment Booking',d:'Booking funnel with confirmation and reminders',rec:1},
+  {id:'sms',n:'SMS',d:'Two-way texting, A2P 10DLC brand and campaign registration',rec:1},
+  {id:'email',n:'Email',d:'Branded templates, banner, sending domain',rec:1},
+  {id:'phone',n:'Phone / IVR',d:'Number provisioning and call routing menu',rec:1,manual:1},
+  {id:'voice',n:'AI Receptionist',d:'Voice AI agent with the FenceOS knowledge base',rec:1},
+  {id:'mctb',n:'Missed Call Text Back',d:'Auto-text on any unanswered inbound call',rec:1},
+  {id:'followup',n:'Lead Follow-Up',d:'Multi-day nurture across SMS and email',rec:1},
+  {id:'reviews',n:'Review Requests',d:'Post-install review ask with Google routing',rec:1},
+  {id:'automations',n:'Automations',d:'Stage-change workflows and internal alerts',rec:1},
+  {id:'reporting',n:'Reporting',d:'Attribution and pipeline dashboards',rec:0}
+];
+</script>
+<script>
+/* ============================================================
+   THE RUN: task graph the agent executes.
+   mode: auto | approval | handoff   (handoff = no HighLevel API
+   write path exists; a human must do it in the agency UI)
+   ============================================================ */
+const PHASES = ['Account & brand','Booking & CRM','Comms & compliance','AI & sign-off'];
+const PH_OF = {biz:0,brand:0,users:0, cal:1,assets:1,crm:1, phone:2,dom:2,web:2,a2p:2, ai:3,sms:3,qa:3};
+let TASKS = [];
+function rebuildAudit(aid){
+  TASKS = GROUPS.map(g=>{
+    const st = groupStat(aid,g);
+    const issues = g.items.map(it=>({it,k:key(g.id,it.id),v:verdictOf(aid,key(g.id,it.id))}))
+                          .filter(x=>['missing','mismatch','client'].includes(x.v));
+    const logs=[{k:'run',m:`Reading <b>${g.src.replace(/&rarr;/g,'\u2192')}</b>&hellip;`,
+                 tech:`GET subaccount ${aid}\nGroup: ${g.n}\nItems to verify: ${st.total}`}];
+    issues.forEach(x=>{
+      const kind = x.v==='client'?'hand':x.v==='mismatch'?'warn':'faill';
+      logs.push({k:kind, m:`<b>${x.it.n}</b> &mdash; ${VERDICT[x.v].l.toLowerCase()}. ${foundOf(aid,x.k)}`,
+                 tech:`item: ${x.k}\nverdict: ${x.v}\nmarked by specialist: ${isMarked(aid,x.k)?'yes':'no'}\nfound: ${foundOf(aid,x.k).replace(/<[^>]+>/g,'')}`});
+    });
+    logs.push({k: issues.length?'warn':'ok',
+      m: issues.length ? `${st.total-issues.length} of ${st.total} verified &middot; <b>${issues.length} flagged</b>`
+                       : `All ${st.total} items verified`,
+      tech:`checked ${st.total} · clear ${st.total-issues.length} · flagged ${issues.length}`});
+    return {id:'g_'+g.id, ph:PH_OF[g.id], n:g.n, mode:'auto', conf:96, deps:[], d:g.d, logs};
+  });
+  TASKS.forEach(t=>S.run.ts[t.id]='pend');
+}
+/* ---------- verification checks ---------- */
+const CHECKS = [
+ {n:'Subaccount created',s:'pass',sub:'loc_3Ax8Qm · created 10:02 AM',d:'Location exists under the FenceOS agency with admin access granted to Ryan Malaluan',t:'GET /v1/locations/loc_3Ax8Qm → 200\nname: "ABC Fence Company — FenceOS"\nstatus: active'},
+ {n:'Business information configured',s:'pass',sub:'11 of 11 fields written',d:'Every field from the Business &amp; Branding Form landed on the location record and matches the EIN CP-575 exactly — which is what A2P review compares against.',t:'name ✓  address ✓  city ✓  state ✓  postalCode ✓\nphone ✓  email ✓  website ✓  timezone ✓  country ✓  niche ✓'},
+ {n:'FenceOS snapshot installed',s:'pass',sub:'v4.2 · 0 failures',d:'Snapshot push report confirms all assets deployed.',t:'42 workflows · 9 forms · 6 pipelines · 118 custom fields\nerrors: 0'},
+ {n:'Pipeline configured',s:'pass',sub:'6 stages in order',d:'FenceOS Pipeline exists with the six standard stages in the correct order.',t:'New Lead → Contacted → Estimate Scheduled → Estimate Sent → Won → Lost'},
+ {n:'Custom fields configured',s:'pass',sub:'9 created, 0 conflicts',d:'All fencing-specific fields exist and are referenced by the forms and workflows that read them.',t:'fence_type · linear_feet · gate_count · property_type\nhoa_approval · survey_on_file · preferred_install_window\nlead_source_detail · estimate_amount'},
+ {n:'Custom values populated',s:'pass',sub:'24 of 24',d:'No snapshot placeholder is left empty, so templates render with the real business details rather than merge-tag artifacts.',t:'company_logo  → assets.cdn.filesafe.space/…/8f21c4.png\nemail_banner  → assets.cdn.filesafe.space/…/8f21c6.png\nbooking_link  → https://link.fenceos.com/widget/abc-fence\n…21 more'},
+ {n:'Brand board applied',s:'pass',sub:'3 assets at spec',d:'Logo, icon and email banner render at FenceOS dimensions from permanent media-storage URLs.',t:'logo   350 × 180 ✓\nicon   300 × 300 ✓\nbanner 1819 × 646 ✓'},
+ {n:'Forms configured',s:'pass',sub:'2 forms live and mapped',d:'Both intake forms are published and every input maps to a real field.',t:'frm_Ee02 Free Estimate Request — 11 inputs, 11 mapped\nfrm_Ee07 Site Survey Intake — 8 inputs, 8 mapped'},
+ {n:'Calendars configured',s:'pass',sub:'2 active · 1 user assigned',d:'Both calendars are active with availability set and a team member assigned.',t:'cal_Pq18 On-Site Estimate — active, Mon–Fri 8:00–16:00, usr_Dw3\ncal_Pq19 Install Window — active, Mon–Fri 7:00–17:00, usr_Dw3'},
+ {n:'Workflows configured',s:'warn',sub:'18 active · 6 paused pending A2P',d:'The workflows themselves are correct. Six of them send SMS as their first action, so they stay paused until the 10DLC campaign clears carrier review — running them now would drop messages silently.',t:'Paused: Missed Call Text Back · Estimate Reminder 24h\nEstimate Reminder 1h · No-Show Recovery · Review Request\nReactivation 90d\nResume trigger: campaign cmp_7T4 → APPROVED'},
+ {n:'Phone number & IVR',s:'fail',sub:'No number assigned to this subaccount',d:'The IVR menu cannot be attached until a number is provisioned. Number purchase is billed to the agency, so it needs a person to authorize it.',t:'GET /v1/phone-numbers/?locationId=loc_3Ax8Qm → []\nERR_NO_NUMBER_ASSIGNED\nAvailable in area code 812: 14 numbers · $1.15/mo each'},
+ {n:'AI receptionist configured',s:'warn',sub:'Built · not answering calls yet',d:'The Voice AI agent, its four actions and its knowledge base are all in place. It has nothing to answer on until a number exists.',t:'agent_Vx2 "ABC Fence Receptionist"\nprompt: FenceOS Standard Receptionist v3 (snapshot-safe)\nattachedNumber: null'}
+];
+</script>
+<script>
+/* ============================================================
+   STATE
+   ============================================================ */
+const S = {
+  view:'dashboard', wizStep:0, useRec:true, tech:false, chatOpen:false,
+  feats:new Set(FEATURES.filter(f=>f.rec).map(f=>f.id)),
+  form:{
+    bname:'ABC Fence Company', web:'https://abcfencecompany.com', phone:'(812) 555-0147',
+    email:'office@abcfencecompany.com', addr:'3120 N Kentucky Ave', city:'Evansville',
+    state:'IN', zip:'47711', tz:'America/Indiana/Indianapolis',
+    contact:'Dale Whitaker', industry:'Residential & commercial fencing',
+    desc:'Family-run fence contractor serving Vanderburgh, Warrick and Posey counties since 1998. Vinyl, wood, chain link and ornamental aluminum.',
+    c1:'#1F4E79', c2:'#C8A96B', tone:'Established, local'
+  },
+  run:{state:'idle', cur:0, sel:null, speed:1, logs:[], ts:{}, fixed:false, approved:{}, timer:null},
+  msgs:[], mobPane:'mid', inspOpen:false, acct:null, acctFilter:'all', findFilter:'all', openG:{}, setTab:'connections', tplG:null, inviting:false
+};
+TASKS.forEach(t=>S.run.ts[t.id]='pend');
+
+const NAV = [
+  {id:'dashboard',n:'Dashboard',i:'grid'},
+  {id:'accounts',n:'Subaccounts',i:'layers'},
+  {id:'workspace',n:'Agent Runs',i:'bot'},
+  {id:'findings',n:'Findings',i:'shield',badge:1},
+  
+  {id:'audit',n:'Audit Log',i:'list'},
+  {id:'snapshots',n:'Snapshots',i:'pkg'},
+  {id:'settings',n:'Settings',i:'cog'}
+];
+
+/* ---------- theme ---------- */
+function getTheme(){ try{return localStorage.getItem('fos-theme')||'system'}catch(e){return 'system'} }
+function setTheme(t){
+  try{localStorage.setItem('fos-theme',t)}catch(e){}
+  if(t==='system') document.documentElement.removeAttribute('data-theme');
+  else document.documentElement.setAttribute('data-theme',t);
+  paintThemeBtn();
+}
+function paintThemeBtn(){
+  const t=getTheme();
+  const dark = t==='dark' || (t==='system' && matchMedia('(prefers-color-scheme:dark)').matches);
+  $('#themeBtn').innerHTML = ic(dark?'sun':'moon',16);
+  $('#themeBtn').title = 'Theme: '+t+' — click to change';
+}
+
+/* ---------- toast ---------- */
+let toastT;
+function toast(msg,kind){
+  clearTimeout(toastT);
+  $('#toastRoot').innerHTML = `<div class="toast">${ic(kind==='bad'?'alert':'check',14)}<span>${msg}</span></div>`;
+  toastT = setTimeout(()=>$('#toastRoot').innerHTML='',2600);
+}
+function modal(html){ $('#modalRoot').innerHTML = `<div class="scrim" data-scrim>${html}</div>`; }
+function closeModal(){ $('#modalRoot').innerHTML=''; }
+
+/* ---------- shell ---------- */
+function paintNav(){
+  const v = ['accounts','account','wizard','plan'].includes(S.view) ? 'accounts' : S.view;
+  $('#nav').innerHTML = `<div class="nav-sec eyebrow">Workspace</div>` + NAV.slice(0,4).map(n=>navItem(n,v)).join('')
+    + `<div class="nav-sec eyebrow">Records</div>` + NAV.slice(4).map(n=>navItem(n,v)).join('');
+  $$('#nav a').forEach(a=>a.onclick=()=>go(a.dataset.go));
+}
+const navItem=(n,v)=>`<a data-go="${n.id}" class="${n.id===v?'on':''}">${ic(n.i)}<span>${n.n}</span>${n.badge&&pendingApprovals()?`<span class="badge">${pendingApprovals()}</span>`:''}</a>`;
+function pendingApprovals(){ return ACCOUNTS.reduce((m,a)=>m+openFindings(a.id).length,0); }
+
+const CRUMBS = {
+  dashboard:['Dashboard'], accounts:['Subaccounts'], wizard:['Subaccounts','New subaccount'],
+  plan:['Subaccounts','ABC Fence Company','Setup plan'], workspace:['Agent Runs','ABC Fence Company'],
+  verify:['Findings'], complete:['Subaccounts','ABC Fence Company'],
+  audit:['Activity log'], findings:['Findings'], snapshots:['Snapshots'], settings:['Settings'],
+  account:['Subaccounts','']
+};
+function paintCrumb(){
+  let c = CRUMBS[S.view]||['Dashboard'];
+  if(S.view==='account'){ const a=ACCOUNTS.find(x=>x.id===S.acct); c=['Subaccounts', a?a.name:'Subaccount']; }
+  $('#crumb').innerHTML = c.map((x,i)=> i===c.length-1?`<b>${x}</b>`:`${x}<span>/</span>`).join('');
+}
+
+function go(v){
+  if(v==='findings'){ v='verify'; }
+  if(v==='plan'){ v='dashboard'; }
+  
+  S.view=v; render(); window.scrollTo(0,0);
+}
+
+/* ============================================================
+   RENDER
+   ============================================================ */
+function render(){
+  paintNav(); paintCrumb();
+  const el=$('#view');
+  el.className = 'view'+(S.view==='workspace'?' flush':'');
+  $('#topActions').innerHTML = topActions();
+  el.innerHTML = ({dashboard:vDash, accounts:vAcctList, snapshots:vSnapshots, settings:vSettings, account:vAccount, wizard:vWiz, plan:vPlan, workspace:vWork, verify:vVerify, complete:vDone, audit:vAudit}[S.view]||vDash)();
+  ({wizard:bindWiz, plan:bindPlan, workspace:bindWork, verify:bindVerify, dashboard:bindDash, accounts:bindAcctList, snapshots:bindSnapshots, settings:bindSettings, account:bindAccount, complete:bindDone, audit:bindAudit}[S.view]||(()=>{}))();
+  $('#chatCtx').textContent = chatCtx();
+  document.body.classList.toggle('tech',S.tech);
+}
+function topActions(){
+  if(S.view==='dashboard') return `<button class="btn pri" onclick="startWizard()">${ic('plus')}<span class="hide-sm">Create New FenceOS Subaccount</span></button>`;
+  if(S.view==='workspace') return `<button class="btn sm" id="techBtn">${S.tech?'Hide':'Show'} technical detail</button>`;
+  return '';
+}
+function chatCtx(){
+  if(S.view==='workspace'){
+    const t=TASKS[S.run.cur];
+    return S.run.state==='running'?`Working on: ${t?t.n:'—'}`: S.run.state==='failed'?'Blocked — 1 error':S.run.state==='blocked'?'Waiting on you':'ABC Fence Company';
+  }
+  return {dashboard:'6 subaccounts',wizard:'New subaccount',plan:'Reviewing setup plan',verify:'Verification',complete:'Setup complete',audit:'Audit log'}[S.view]||'Idle';
+}
+
+/* ============================================================
+   VIEW · DASHBOARD
+   ============================================================ */
+function vDash(){
+  const n = ACCOUNTS.length;
+  const clear = ACCOUNTS.filter(a=>!openFindings(a.id).length).length;
+  const issues = ACCOUNTS.reduce((m,a)=>m+openFindings(a.id).filter(f=>f.v!=='client').length,0);
+  const cli  = ACCOUNTS.filter(a=>clientBlocked(a.id).length).length;
+  const miss = ACCOUNTS.reduce((m,a)=>m+openFindings(a.id).filter(f=>f.v==='missing').length,0);
+  const tile=(v,l,s2,i,cls,extra)=>`<div class="tile ${cls||''}">
+    <div class="top"><div class="ic" style="background:var(--${i.bg});color:var(--${i.fg})">${ic(i.n,13)}</div><div class="eyebrow">${l}</div></div>
+    <div class="val">${v}</div><div class="sub">${s2}</div>${extra||''}</div>`;
+  return `
+  <div class="sec-head"><h1>Dashboard</h1><div class="sp"></div>
+    <span class="dim" style="font-size:12.5px">Agency: FenceOS &middot; ${n} subaccounts &middot; last audit 9 Sep</span></div>
+  <div class="tiles">
+    ${tile(n,'Total subaccounts','Across the FenceOS agency',{n:'layers',bg:'accent-soft',fg:'accent'},'',
+      `<div class="spark">${[3,4,2,5,4,6,5,7].map(h=>`<i style="height:${h*3}px"></i>`).join('')}</div>`)}
+    ${tile(clear,'Audited clear','No open findings',{n:'check',bg:'ok-soft',fg:'ok'})}
+    ${tile(miss,'Missing information','Fields empty in HighLevel',{n:'srch',bg:'crit-soft',fg:'crit'},'attn')}
+    ${tile(cli,'Waiting on client','Information or access we cannot get',{n:'hand',bg:'hand-soft',fg:'hand'},'',
+      `<div class="dim" style="font-size:11px">Longest wait: 41 days &mdash; Bee Fencing</div>`)}
+    ${tile(issues,'Open findings','Across every subaccount',{n:'alert',bg:'warn-soft',fg:'warn'})}
+  </div>
+  <div class="grid-2">
+    <div class="card">
+      <div class="pad" style="display:flex;align-items:center;gap:10px;border-bottom:1px solid var(--line)">
+        <h2>Subaccounts</h2>
+        <div class="sp" style="margin-left:auto"></div>
+        <div class="srch">${ic('srch')}<input placeholder="Filter by name, owner or location ID" id="acctSearch"></div>
+      </div>
+      <div class="scroll-x">
+      <table class="tbl"><thead><tr>
+        <th>Business</th><th>Owner</th><th>Pipeline stage</th><th>Readiness</th>
+        <th>Blocked on</th><th class="hide-sm">In stage</th><th class="hide-sm">Blocker</th><th></th>
+      </tr></thead><tbody id="acctBody">${ACCOUNTS.map(rowFor).join('')}</tbody></table>
+      </div>
+    </div>
+    <div class="card">
+      <div class="pad" style="border-bottom:1px solid var(--line)"><h2>Recent activity</h2></div>
+      <div class="feed">${FEED.map(f=>{
+        const map={ok:['ok-soft','ok','check'],crit:['crit-soft','crit','alert'],warn:['warn-soft','warn','alert'],hand:['hand-soft','hand','hand']}[f.k];
+        return `<div class="feed-item"><div class="fi" style="background:var(--${map[0]});color:var(--${map[1]})">${ic(map[2],11)}</div>
+        <div class="txt"><b>${f.b}</b> ${f.m}<time>${f.t} AM</time></div></div>`;}).join('')}</div>
+    </div>
+  </div>`;
+}
+const stale=a=>a.days>35 && readiness(a.id)<100 && a.block!=='none';
+function rowFor(a){
+  const meterCls = a.block==='agency'?'crit':readiness(a.id)===100?'ok':a.block==='client'?'warn':'';
+  const b=BLOCK[a.block];
+  return `<tr data-acct="${a.id}" data-name="${esc((a.name+' '+a.city+' '+a.id).toLowerCase())}">
+    <td><div class="biz"><div class="sq">${a.init}</div><div><b>${esc(a.name)}</b><small>${a.id}</small></div></div></td>
+    <td class="muted" style="white-space:nowrap">${esc(a.city)}</td>
+    <td>${badge(acctStage(a.id))}${OVERRIDE[a.id]?'<span class="dim" style="font-size:10px;margin-left:5px">manual</span>':''}</td>
+    <td><div class="prog-cell"><div class="meter ${meterCls}"><i style="width:${readiness(a.id)}%"></i></div><span class="num">${readiness(a.id)}%</span></div></td>
+    <td>${a.block==='none'?'<span class="dim">&mdash;</span>':`<span class="chip ${b.c}"><i class="dot"></i>${b.l}</span>`}</td>
+    <td class="hide-sm num ${stale(a)?'':'dim'}" style="white-space:nowrap;${stale(a)?'color:var(--crit);font-weight:600':''}">${a.days}d</td>
+    <td class="muted hide-sm" style="font-size:12px;max-width:210px">${esc(latestNote(a.id))||'<span class="dim">&mdash;</span>'}</td>
+    <td><div class="rowact"><button class="btn sm">Open${ic('chev',12)}</button></div></td>
+  </tr>`;
+}
+function bindDash(){
+  const s=$('#acctSearch');
+  if(s) s.oninput=()=>{const q=s.value.toLowerCase();$$('#acctBody tr').forEach(r=>r.style.display=r.dataset.name.includes(q)?'':'none');};
+  $$('#acctBody tr').forEach(r=>r.onclick=()=>{ S.acct=r.dataset.acct; S.view='account'; render(); window.scrollTo(0,0); });
+}
+
+/* ============================================================
+   VIEW · WIZARD
+   ============================================================ */
+function startWizard(){ S.wizStep=0; S.view='wizard'; render(); }
+const WSTEPS=['Business information','Brand & contacts','FenceOS configuration','Review'];
+function vWiz(){
+  return `<div class="wiz">
+    <div class="steps">${WSTEPS.map((s,i)=>`
+      <div class="step ${i===S.wizStep?'on':''} ${i<S.wizStep?'done':''}">
+        <div class="n">${i<S.wizStep?ic('check',12):i+1}</div><div class="lbl">${s}</div>
+      </div>${i<WSTEPS.length-1?'<div class="bar"></div>':''}`).join('')}
+    </div>
+    <div class="card pad" style="padding:20px">${[wStep1,wStep2,wStep3,wStep4][S.wizStep]()}</div>
+    <div class="wiz-foot">
+      ${S.wizStep>0?`<button class="btn" id="wBack">Back</button>`:`<button class="btn" onclick="go('dashboard')">Cancel</button>`}
+      <div class="sp"></div>
+      <span class="dim" style="font-size:12px">Step ${S.wizStep+1} of 4</span>
+      <button class="btn pri lg" id="wNext">${S.wizStep===3?'Add subaccount':'Continue'}${ic('arrow')}</button>
+    </div>
+  </div>`;
+}
+const fld=(k,l,ph,req,type)=>`<div class="f" data-f="${k}">
+  <label for="i-${k}">${l} ${req?'<span class="req">*</span>':'<span class="opt">optional</span>'}</label>
+  <input id="i-${k}" value="${esc(S.form[k]||'')}" placeholder="${ph||''}" type="${type||'text'}">
+  <div class="err">This field is required</div></div>`;
+
+function wStep1(){
+  return `<h2>Tell us about the business</h2>
+  <p class="muted" style="margin:5px 0 4px;max-width:62ch">The reference copy of the client&rsquo;s details. The agent compares the subaccount against this &mdash; anything that disagrees becomes a finding.</p>
+  <p class="dim" style="font-size:12px;margin-bottom:16px">Pre-filled with example data so you can walk the flow.</p>
+  <div class="fields">
+    ${fld('bname','Business name','ABC Fence Company',1)}
+    ${fld('web','Website','https://',0)}
+    ${fld('phone','Business phone','(812) 555-0147',1,'tel')}
+    ${fld('email','Business email','office@',1,'email')}
+    <div class="f wide" data-f="addr"><label for="i-addr">Business address <span class="req">*</span></label>
+      <input id="i-addr" value="${esc(S.form.addr)}"><div class="err">This field is required</div></div>
+    ${fld('city','City','',1)}
+    <div class="f" data-f="state"><label for="i-state">State <span class="req">*</span></label>
+      <select id="i-state">${['IN','KY','IL','OH','MI','TN','MO','OK','NC','OR','AL','NE','ID'].map(s=>`<option ${s===S.form.state?'selected':''}>${s}</option>`).join('')}</select></div>
+    ${fld('zip','ZIP code','',1)}
+    <div class="f" data-f="tz"><label for="i-tz">Time zone <span class="req">*</span></label>
+      <select id="i-tz">${['America/Indiana/Indianapolis','America/Chicago','America/New_York','America/Denver','America/Los_Angeles'].map(s=>`<option ${s===S.form.tz?'selected':''}>${s}</option>`).join('')}</select></div>
+    <div class="f wide"><label for="i-desc">Business description <span class="opt">optional — the AI receptionist reads from this</span></label>
+      <textarea id="i-desc">${esc(S.form.desc)}</textarea></div>
+  </div>`;
+}
+function wStep2(){
+  return `<h2>Brand and primary contact</h2>
+  <p class="muted" style="margin:5px 0 16px;max-width:62ch">The agent renders the logo, icon and email banner at FenceOS dimensions from these, then writes them into the subaccount's custom values.</p>
+  <div class="fields">
+    ${fld('contact','Primary contact','Dale Whitaker',1)}
+    ${fld('industry','Business type','Residential fencing',0)}
+    <div class="f"><label>Primary brand color</label><div class="swatch-row">
+      <input type="color" class="swatch" id="i-c1" value="${S.form.c1}">
+      <input id="i-c1t" class="mono" value="${S.form.c1}" style="flex:1"></div></div>
+    <div class="f"><label>Secondary brand color</label><div class="swatch-row">
+      <input type="color" class="swatch" id="i-c2" value="${S.form.c2}">
+      <input id="i-c2t" class="mono" value="${S.form.c2}" style="flex:1"></div></div>
+    ${fld('tone','Brand tone','Established, local',0)}
+    <div class="f"><label>EIN / CP-575 <span class="opt">required for A2P</span></label>
+      <input value="CP-575 — ABC Fence Co LLC.pdf" readonly style="color:var(--ink-2)"></div>
+    <div class="f wide"><label>Company logo</label>
+      <div class="drop">${ic('file',18)}<div style="margin-top:6px"><b style="color:var(--ink)">abc-fence-logo.png</b> · 1400 × 720 · uploaded</div>
+      <div style="margin-top:3px">The agent resizes to 350 × 180, 300 × 300 and 1819 × 646</div></div></div>
+  </div>`;
+}
+function wStep3(){
+  const on=id=>S.feats.has(id);
+  return `<h2>Which modules is this client buying?</h2>
+  <p class="muted" style="margin:5px 0 16px;max-width:62ch">This scopes the audit. Anything switched off is skipped in the checklist rather than counted against readiness.</p>
+  <div class="rec-bar">
+    <div class="ai">${ic('bot',15)}</div>
+    <div style="flex:1;min-width:0">
+      <b style="font-family:var(--disp);font-size:13.5px">Use recommended FenceOS configuration</b>
+      <p class="muted" style="font-size:12.5px;margin-top:2px">Based on a residential and commercial fence contractor in Evansville with one estimator, the agent recommends 13 of 14 modules. Reporting is left off — it needs 30 days of pipeline data first.</p>
+    </div>
+    <button class="sw ${S.useRec?'on':''}" id="recSw" role="switch" aria-checked="${S.useRec}" aria-label="Use recommended configuration"></button>
+  </div>
+  <div class="featgrid">${FEATURES.map(f=>`
+    <button class="feat ${on(f.id)?'on':''}" data-feat="${f.id}" aria-pressed="${on(f.id)}">
+      <div class="box">${ic('check',10)}</div>
+      <div><b>${f.n}${f.manual?`<span class="tag tag-man">Human step</span>`:''}</b><small>${f.d}</small></div>
+    </button>`).join('')}</div>
+  <p class="dim" style="font-size:12px;margin-top:12px">${ic('hand',12)} <b>Human step</b> — the agent prepares everything it can, then hands you the exact action to take in HighLevel. These parts have no API write path.</p>`;
+}
+function wStep4(){
+  const sel=FEATURES.filter(f=>S.feats.has(f.id));
+  return `<h2>Review before adding</h2>
+  <p class="muted" style="margin:5px 0 18px">This creates the tracking record. The agent never writes to HighLevel &mdash; it reads the subaccount and tells you what is missing or wrong.</p>
+  <div style="display:grid;gap:14px">
+    <div><div class="eyebrow" style="margin-bottom:8px">Business</div>
+      <dl class="kv">
+        <dt>Name</dt><dd>${esc(S.form.bname)}</dd>
+        <dt>Address</dt><dd>${esc(S.form.addr)}, ${esc(S.form.city)}, ${S.form.state} ${esc(S.form.zip)}</dd>
+        <dt>Phone</dt><dd>${esc(S.form.phone)}</dd>
+        <dt>Email</dt><dd>${esc(S.form.email)}</dd>
+        <dt>Website</dt><dd>${esc(S.form.web)}</dd>
+        <dt>Time zone</dt><dd class="mono" style="font-size:12.5px">${S.form.tz}</dd>
+        <dt>Primary contact</dt><dd>${esc(S.form.contact)}</dd>
+      </dl></div>
+    <hr class="divide">
+    <div><div class="eyebrow" style="margin-bottom:8px">Brand</div>
+      <div class="split" style="gap:14px">
+        <div class="split"><span style="width:22px;height:22px;border-radius:5px;background:${S.form.c1};border:1px solid var(--line-2);display:block"></span><span class="mono" style="font-size:12.5px">${S.form.c1}</span></div>
+        <div class="split"><span style="width:22px;height:22px;border-radius:5px;background:${S.form.c2};border:1px solid var(--line-2);display:block"></span><span class="mono" style="font-size:12.5px">${S.form.c2}</span></div>
+        <span class="dim">·</span><span class="muted">${esc(S.form.tone)}</span>
+      </div></div>
+    <hr class="divide">
+    <div><div class="eyebrow" style="margin-bottom:8px">Configuration — ${sel.length} modules</div>
+      <div style="display:flex;flex-wrap:wrap;gap:6px">${sel.map(f=>`<span class="chip ${f.manual?'c-hand':'c-idle'}">${f.n}</span>`).join('')}</div></div>
+  </div>`;
+}
+function readForm(){
+  ['bname','web','phone','email','addr','city','zip','contact','industry','tone','desc'].forEach(k=>{const e=$('#i-'+k); if(e) S.form[k]=e.value;});
+  ['state','tz'].forEach(k=>{const e=$('#i-'+k); if(e) S.form[k]=e.value;});
+  const c1=$('#i-c1'),c2=$('#i-c2'); if(c1)S.form.c1=c1.value; if(c2)S.form.c2=c2.value;
+}
+function bindWiz(){
+  const back=$('#wBack'); if(back) back.onclick=()=>{readForm();S.wizStep--;render();};
+  $('#wNext').onclick=()=>{
+    readForm();
+    if(S.wizStep===0){
+      let bad=false;
+      [['bname'],['phone'],['email'],['addr'],['city'],['zip']].forEach(([k])=>{
+        const w=$(`[data-f="${k}"]`); const ok=(S.form[k]||'').trim().length>1;
+        if(w){w.classList.toggle('bad',!ok); if(!ok)bad=true;}
+      });
+      const em=$('[data-f="email"]');
+      if(!bad && !/^[^@\s]+@[^@\s]+\.[a-z]{2,}$/i.test(S.form.email)){ em.classList.add('bad'); $('.err',em).textContent='Enter a valid email address'; bad=true; }
+      if(bad){ toast('Fix the highlighted fields','bad'); return; }
+    }
+    if(S.wizStep===3){
+      const id='loc_'+Math.random().toString(36).slice(2,6).replace(/^(.)/,c=>c.toUpperCase());
+      const init=(S.form.bname||'NA').split(/\s+/).slice(0,2).map(w=>w[0]).join('').toUpperCase();
+      const acc={id,name:S.form.bname,city:S.form.contact,status:'creation',prog:0,block:'none',note:'',created:'Sep 9, 2026',days:0,init};
+      ACCOUNTS.unshift(acc); MARKS[id]=new Set(); FIND[id]={}; NOTES[id]=[];
+      S.acct=id; S.view='account'; render(); window.scrollTo(0,0);
+      toast('Subaccount added — work the checklist, then run the audit'); return;
+    }
+    S.wizStep++; render(); window.scrollTo(0,0);
+  };
+  const sw=$('#recSw');
+  if(sw) sw.onclick=()=>{ S.useRec=!S.useRec; if(S.useRec){S.feats=new Set(FEATURES.filter(f=>f.rec).map(f=>f.id));} render(); };
+  $$('[data-feat]').forEach(b=>b.onclick=()=>{
+    const id=b.dataset.feat;
+    S.feats.has(id)?S.feats.delete(id):S.feats.add(id);
+    S.useRec=false; render();
+  });
+  ['c1','c2'].forEach(k=>{
+    const p=$('#i-'+k), t=$('#i-'+k+'t');
+    if(p&&t){ p.oninput=()=>{t.value=p.value;S.form[k]=p.value}; t.oninput=()=>{if(/^#[0-9a-f]{6}$/i.test(t.value)){p.value=t.value;S.form[k]=t.value}}; }
+  });
+}
+</script>
+<script>
+/* ============================================================
+   VIEW · AI SETUP PLAN
+   ============================================================ */
+const confCls=c=>c>=88?'':c>=75?'mid':'low';
+function vPlan(){
+  const auto=TASKS.filter(t=>t.mode==='auto').length, ap=TASKS.filter(t=>t.mode==='approval').length, hd=TASKS.filter(t=>t.mode==='handoff').length;
+  return `
+  <div style="max-width:960px;margin:0 auto">
+  <div class="plan-hero">
+    <div class="ai">${ic('bot',19)}</div>
+    <div style="flex:1;min-width:0">
+      <h2>Setup plan for ${esc(S.form.bname)}</h2>
+      <p class="muted" style="margin-top:6px;max-width:66ch;font-size:13.5px">I read the business information and the 13 modules you selected. Here is what I intend to do, in order. I will run the steps marked <b>automatic</b> on my own. Two steps need your approval before I touch them, and two have no API write path at all — for those I will prepare everything and hand you the exact action.</p>
+      <div class="plan-stats">
+        <div><b>${TASKS.length}</b><span class="dim" style="font-size:11.5px">tasks</span></div>
+        <div><b>${auto}</b><span class="dim" style="font-size:11.5px">automatic</span></div>
+        <div><b style="color:var(--warn)">${ap}</b><span class="dim" style="font-size:11.5px">need approval</span></div>
+        <div><b style="color:var(--hand)">${hd}</b><span class="dim" style="font-size:11.5px">human steps</span></div>
+        <div><b>~38m</b><span class="dim" style="font-size:11.5px">est. agent time</span></div>
+      </div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="pad" style="border-bottom:1px solid var(--line);display:flex;align-items:center;gap:10px">
+      <h2>Tasks</h2><div class="sp" style="margin-left:auto"></div>
+      <span class="dim" style="font-size:12px">Grouped by phase · dependencies enforced</span>
+    </div>
+    ${PHASES.map((ph,pi)=>{
+      const ts=TASKS.filter(t=>t.ph===pi); if(!ts.length) return '';
+      return `<div style="padding:11px 15px 3px;background:var(--panel-2);border-bottom:1px solid var(--line)"><span class="eyebrow">Phase ${pi+1} · ${ph}</span></div>`
+      + ts.map(t=>{
+        const i=TASKS.indexOf(t)+1;
+        const dep = t.deps.length? TASKS.find(x=>x.id===t.deps[0]) : null;
+        return `<div class="ptask">
+          <div class="idx num">${String(i).padStart(2,'0')}</div>
+          <div class="body">
+            <b>${t.n}</b>
+            <p>${t.d}</p>
+            <div class="metaline">
+              <span class="conf ${confCls(t.conf)}">Confidence <span class="bars">${[1,2,3,4,5].map(n=>`<i class="${n<=Math.round(t.conf/20)?'f':''}"></i>`).join('')}</span> <b class="num" style="font-weight:600">${t.conf}%</b></span>
+              <span>${dep?`Waits on <span class="mono">${dep.n}</span>`:'No dependencies'}</span>
+            </div>
+          </div>
+          <div class="right">
+            ${t.mode==='auto'?'<span class="chip c-idle">Automatic</span>':t.mode==='approval'?'<span class="chip c-warn"><i class="dot"></i>Needs approval</span>':'<span class="chip c-hand"><i class="dot"></i>Human step</span>'}
+          </div>
+        </div>`;
+      }).join('');
+    }).join('')}
+  </div>
+  <div class="wiz-foot">
+    <button class="btn" onclick="S.view='wizard';S.wizStep=2;render()">${ic('chev')}Edit configuration</button>
+    <button class="btn" id="askPlan">${ic('bot')}Ask about this plan</button>
+    <div class="sp"></div>
+    <button class="btn pri lg" id="approvePlan">Approve plan &amp; start agent${ic('arrow')}</button>
+  </div></div>`;
+}
+function bindPlan(){
+  const ap=$('#approvePlan'); if(ap) ap.onclick=()=>{ S.view='workspace'; S.run.logs=[]; render(); setTimeout(runStep,500); };
+  $('#askPlan').onclick=()=>{ openChat(); ask('Why do two steps need my approval?'); };
+}
+
+/* ============================================================
+   VIEW · AGENT WORKSPACE
+   ============================================================ */
+function vWork(){
+  return `<div class="mobtabs">
+      <button data-pane="left" class="${S.mobPane==='left'?'on':''}">Tasks</button>
+      <button data-pane="mid" class="${S.mobPane==='mid'?'on':''}">Activity</button>
+      <button data-pane="right" class="${S.mobPane==='right'?'on':''}">Agent</button>
+    </div>
+    <div class="ws">
+    <div class="ws-col left ${S.mobPane==='left'?'mob':''}">
+      <div class="ws-head"><span class="eyebrow">Audit</span><div class="sp"></div><span class="dim num" style="font-size:11.5px">${doneCount()}/${TASKS.length}</span></div>
+      <div class="ws-body"><div class="runline" id="runline">${runlineHTML()}</div></div>
+    </div>
+    <div class="ws-col mid ${S.mobPane==='mid'?'mob':''}">
+      <div class="agent-now ${S.run.state==='running'?'working':''}" id="agentNow">${agentNowHTML()}</div>
+      <div class="logbar">
+        <span class="eyebrow">Activity</span>
+        <div class="sp"></div>
+        <button class="btn sm" id="techBtn2">${S.tech?'Hide':'Show'} technical detail</button>
+        <button class="btn sm" id="spdBtn" title="Demo playback speed">${S.run.speed}&times;</button>
+      </div>
+      <div class="logwrap" id="logwrap">${S.run.logs.length?S.run.logs.map(l=>l.html).join(''):`<p class="dim" style="font-size:13px">Waiting to start&hellip;</p>`}</div>
+    </div>
+    <div class="ws-col right ${S.inspOpen?'open':''} ${S.mobPane==='right'?'mob':''}" id="insp">${inspHTML()}</div>
+  </div>`;
+}
+const doneCount=()=>TASKS.filter(t=>['done','skip'].includes(S.run.ts[t.id])).length;
+const pct=()=>Math.round(doneCount()/TASKS.length*100);
+
+function runlineHTML(){
+  return PHASES.map((ph,pi)=>{
+    const ts=TASKS.filter(t=>t.ph===pi); if(!ts.length)return '';
+    return `<div class="rl-group"><div class="eyebrow">${ph}</div>${ts.map(t=>{
+      const st=S.run.ts[t.id];
+      const cls={done:'done',run:'run',fail:'fail',hand:'hand',wait:'wait',skip:'skip',pend:'pend'}[st];
+      const glyph = st==='done'?ic('check',8):st==='fail'?ic('x',8):st==='hand'?ic('hand',8):'';
+      return `<button class="node ${cls} ${S.run.sel===t.id?'sel':''}" data-task="${t.id}">
+        <span class="gut"><span class="dotn">${glyph}</span></span>
+        <span class="nm">${t.n}</span>
+        ${st==='wait'?'<span class="tail">approve</span>':st==='hand'?'<span class="tail">you</span>':''}
+      </button>`;}).join('')}</div>`;
+  }).join('');
+}
+function agentNowHTML(){
+  const t=TASKS[S.run.cur];
+  const st=S.run.state;
+  let title='Setup Agent', body='', extra='';
+  if(st==='running'){ body=`I'm checking <b>${t?t.n:'the subaccount'}</b>. ${t?t.d:''}`; extra=`<div class="thinking"><i></i><i></i><i></i> AI is working</div>`; }
+  else if(st==='paused'){ body='Paused. Nothing is running — the subaccount is left exactly as it is. Resume when you are ready.'; }
+  else if(st==='blocked'){ body = t&&t.mode==='handoff' ? `I've gone as far as the API allows on <b>${t.n}</b>. This one is an agency-level screen with no write endpoint, so it needs you.` : `I need your approval before I touch <b>${t.n}</b>.`; }
+  else if(st==='failed'){ body=`I couldn't finish <b>${t?t.n:'that task'}</b>. ${S.run.fixed?'':'The subaccount has no phone number assigned, so there is nothing to attach the routing menu to.'} Everything before it is intact — I stopped here rather than build on a broken step.`; }
+  else if(st==='done'){ const n=openFindings(S.acct||ACCOUNTS[0].id).length; body=`Audit finished. I read every group in the subaccount and compared it against the checklist. ${n?`<b>${n} finding${n===1?'':'s'}</b> — listed on the subaccount.`:'Nothing flagged.'}`; }
+  else { body='Ready to start.'; }
+  return `<div class="ai">${ic('bot',18)}</div><div style="min-width:0"><h3>${title}</h3><p>${body}</p>${extra}</div>`;
+}
+function inspHTML(){
+  const t=TASKS[S.run.cur]||TASKS[TASKS.length-1];
+  const sel=S.run.sel?TASKS.find(x=>x.id===S.run.sel):t;
+  const st=S.run.state;
+  let alert='';
+  if(st==='failed') alert=`<div class="insp-sec"><div class="alertbox crit"><h4>${ic('alert',13)} Configure phone &amp; IVR failed</h4>
+    <p><span class="mono" style="font-size:11px">ERR_NO_NUMBER_ASSIGNED</span> — no number is provisioned on this subaccount. Buying one is billed to the agency, so I won't do it without you.</p>
+    <div class="btn-row" style="margin-top:9px"><button class="btn sm pri" id="assignNum">Assign number</button><button class="btn sm" id="retryTask">Retry</button><button class="btn sm" id="skipTask">Continue without it</button></div></div></div>`;
+  else if(st==='blocked'&&t.mode==='handoff') alert=`<div class="insp-sec"><div class="alertbox hand"><h4>${ic('hand',13)} Human step required</h4>
+    <p>${t.n} has no API write path. I've prepared the exact action — open the handoff card to see it.</p>
+    <div class="btn-row" style="margin-top:9px"><button class="btn sm pri" id="openHand">Open handoff</button></div></div></div>`;
+  else if(st==='blocked') alert=`<div class="insp-sec"><div class="alertbox"><h4>${ic('shield',13)} Approval required</h4>
+    <p>${t.n} — I won't run this until you approve it.</p>
+    <div class="btn-row" style="margin-top:9px"><button class="btn sm pri" id="openApp">Review request</button></div></div></div>`;
+  const perms=[
+    ['Read location &amp; settings',1],['Read calendars &amp; users',1],['Read custom values',1],
+    ['Read the live website',1],['Change any setting',0],['Contact the client',0]
+  ];
+  return `<div class="ws-head"><span class="eyebrow">Agent</span><div class="sp"></div>
+      <span class="chip ${st==='running'?'c-run':st==='failed'?'c-crit':st==='blocked'?'c-warn':st==='done'?'c-ok':'c-idle'}"><i class="dot"></i>${{running:'Working',paused:'Paused',blocked:'Waiting on you',failed:'Blocked',done:'Finished',idle:'Idle'}[st]}</span></div>
+    <div class="ws-body">
+    <div class="insp-sec">
+      <span class="eyebrow">Progress</span>
+      <div class="big-prog"><b class="num">${pct()}%</b><span class="dim" style="font-size:12px">${doneCount()} of ${TASKS.length} tasks</span></div>
+      <div class="meter ${st==='failed'?'crit':st==='done'?'ok':''}"><i style="width:${pct()}%"></i></div>
+    </div>
+    ${alert}
+    <div class="insp-sec">
+      <span class="eyebrow">Current task</span>
+      <dl class="kv" style="grid-template-columns:auto 1fr">
+        <dt>Task</dt><dd>${sel?sel.n:'—'}</dd>
+        <dt>Mode</dt><dd>${sel?(sel.mode==='auto'?'Automatic':sel.mode==='approval'?'<span style="color:var(--warn)">Needs approval</span>':'<span style="color:var(--hand)">Human step</span>'):'—'}</dd>
+        <dt>Confidence</dt><dd class="num">${sel?sel.conf+'%':'—'}</dd>
+      </dl>
+    </div>
+    <div class="insp-sec">
+      <span class="eyebrow">Target</span>
+      <dl class="kv" style="grid-template-columns:auto 1fr">
+        <dt>Subaccount</dt><dd>${esc(S.form.bname)} — FenceOS</dd>
+        <dt>Location ID</dt><dd class="mono" style="font-size:12px">loc_3Ax8Qm</dd>
+        <dt>Agency</dt><dd>FenceOS</dd>
+        <dt>Snapshot</dt><dd>FenceOS Master v4.2</dd>
+      </dl>
+    </div>
+    <div class="insp-sec">
+      <span class="eyebrow">Permissions</span>
+      ${perms.map(([p,ok])=>`<div class="perm ${ok?'':'no'}">${ic(ok?'check':'hand',13)}<span>${p}</span>${ok?'':'<span class="dim" style="margin-left:auto;font-size:11px">you</span>'}</div>`).join('')}
+    </div>
+    <div class="insp-sec">
+      <span class="eyebrow">Controls</span>
+      <div class="ctrl-grid">
+        ${st==='running'?`<button class="btn" id="cPause">${ic('pause')}Pause</button>`:`<button class="btn" id="cResume" ${['done'].includes(st)?'disabled':''}>${ic('play')}Resume</button>`}
+        <button class="btn" id="cRetry" ${st==='failed'?'':'disabled'}>${ic('redo')}Retry</button>
+        <button class="btn" id="cSkip" ${['failed','blocked'].includes(st)?'':'disabled'}>${ic('skip')}Skip task</button>
+        <button class="btn" id="cApprove" ${st==='blocked'?'':'disabled'}>${ic('check')}Approve</button>
+        <button class="btn danger full" id="cStop">${ic('stop')}Stop setup</button>
+        ${st==='done'?`<button class="btn pri full" id="cVerify">Back to subaccount${ic('arrow')}</button>`:''}
+      </div>
+    </div></div>`;
+}
+</script>
+<script>
+/* ============================================================
+   SIMULATION ENGINE
+   ============================================================ */
+let clockMin = 602; // 10:02
+const stamp=()=>{const h=Math.floor(clockMin/60),m=clockMin%60;return `${((h+11)%12)+1}:${String(m).padStart(2,'0')} ${h<12?'AM':'PM'}`;};
+const GLYPH={run:'dot',ok:'check',warn:'alert',warnl:'alert',faill:'x',hand:'hand'};
+function appendLog(t,lg,head){
+  clockMin += 1 + Math.floor(Math.random()*2);
+  let html='';
+  if(head) html += `<div class="log-head">${t.n}</div>`;
+  const k = lg.k==='warn'?'warnl':lg.k;
+  html += `<div class="logline ${k}"><time>${stamp()}</time><span class="gl">${ic(GLYPH[k]||'dot',11)}</span><span class="m">${lg.m}${lg.tech?`<span class="tech">${esc(lg.tech)}</span>`:''}</span></div>`;
+  if(head && t.stages) html += `<div class="logline"><time></time><span class="gl"></span><span class="m"><div class="stage-chips">${t.stages.map(s=>`<span class="sc">${s}</span>`).join('')}</div></span></div>`;
+  S.run.logs.push({html, task:t.n, kind:k, time:stamp(), msg:lg.m.replace(/<[^>]+>/g,''), tech:lg.tech||''});
+  const w=$('#logwrap');
+  if(w){ if(w.querySelector('p.dim')) w.innerHTML=''; w.insertAdjacentHTML('beforeend',html); w.scrollTop=w.scrollHeight; }
+}
+function repaintWork(){
+  const rl=$('#runline'); if(rl){ rl.innerHTML=runlineHTML();
+    $$('[data-task]').forEach(b=>b.onclick=()=>{ S.run.sel=b.dataset.task; repaintWork(); }); }
+  const an=$('#agentNow'); if(an){ an.innerHTML=agentNowHTML(); an.classList.toggle('working',S.run.state==='running'); }
+  const ip=$('#insp'); if(ip){ ip.innerHTML=inspHTML(); ip.classList.toggle('open',S.inspOpen); ip.classList.toggle('mob',S.mobPane==='right'); }
+  const dc=$('.ws-col.left .ws-head .dim'); if(dc) dc.textContent=`${doneCount()}/${TASKS.length}`;
+  bindWorkControls();
+  $('#chatCtx').textContent=chatCtx();
+  paintNav();
+}
+const wait=ms=>{clearTimeout(S.run.timer); S.run.timer=setTimeout(()=>{ if(S.run.state==='running') step(); }, ms/S.run.speed);};
+
+function runStep(){ rebuildAudit(S.acct||ACCOUNTS[0].id); S.run.state='running'; S.run.cur=0; S.run.li=0; step(); }
+function step(){
+  if(S.run.state!=='running') return;
+  const t=TASKS[S.run.cur];
+  if(!t){ S.run.state='done'; repaintWork(); toast('Setup run finished'); return; }
+  if(t.mode==='approval' && !S.run.approved[t.id]){ S.run.ts[t.id]='wait'; S.run.state='blocked'; S.run.sel=t.id; repaintWork(); openApproval(t); return; }
+  const st0=S.run.ts[t.id];
+  if(st0==='pend'||st0==='wait'){ S.run.ts[t.id]='run'; S.run.li=0; S.run.sel=t.id; repaintWork(); }
+  else if(st0==='hand'){ S.run.ts[t.id]='run'; S.run.sel=t.id; repaintWork(); }
+  const logs = (t.id==='t11' && S.run.fixed) ? t.altLogs : t.logs;
+  if(S.run.li>=logs.length){ S.run.ts[t.id]='done'; S.run.cur++; S.run.li=0; repaintWork(); wait(500); return; }
+  const lg=logs[S.run.li];
+  appendLog(t,lg,S.run.li===0);
+  S.run.li++;
+  if(t.mode==='handoff' && S.run.li===1 && !S.run.approved[t.id]){
+    S.run.ts[t.id]='hand'; S.run.state='blocked'; repaintWork(); openHandoff(t); return;
+  }
+  wait(950);
+}
+const _unusedAlt=[
+  {k:'run',m:'Re-checking phone numbers on the subaccount&hellip;',tech:'GET /v1/phone-numbers/?locationId=loc_3Ax8Qm\n→ [ { "number": "+18125550188", "areaCode": "812", "capabilities": ["voice","sms"] } ]'},
+  {k:'ok',m:'Number <b>(812) 555-0188</b> assigned and set as the primary line',tech:'PUT /v1/locations/loc_3Ax8Qm  primaryPhone = +18125550188'},
+  {k:'ok',m:'IVR menu built — 4 options, business-hours routing',tech:'1 → New estimate    → Voice AI agent agent_Vx2\n2 → Existing job    → forward usr_Dw3\n3 → Billing         → voicemail-to-text\n0 → Operator        → forward usr_Dw3\nAfter hours → Voice AI agent, then voicemail-to-text'},
+  {k:'ok',m:'AI receptionist attached to the number and answering'}
+];
+
+/* ---------- approval + handoff ---------- */
+function openApproval(t){
+  const risky = t.id==='t11';
+  modal(`<div class="modal" role="dialog" aria-modal="true">
+    <div class="modal-head">
+      <div class="mi" style="background:var(--warn-soft);color:var(--warn)">${ic('shield',17)}</div>
+      <div style="flex:1"><h2>Approval required</h2>
+      <p class="muted" style="font-size:13px;margin-top:3px">The agent wants to ${t.id==='t10'?'submit the A2P 10DLC brand and campaign':'configure the phone number and call routing'}</p></div>
+    </div>
+    <div class="modal-body">
+      <dl class="kv" style="margin-bottom:4px">
+        <dt>Task</dt><dd>${t.n}</dd>
+        <dt>Subaccount</dt><dd>${esc(S.form.bname)} — FenceOS <span class="mono dim" style="font-size:11.5px">loc_3Ax8Qm</span></dd>
+        <dt>Confidence</dt><dd class="num">${t.conf}%</dd>
+        <dt>Reversible</dt><dd>${t.id==='t10'?'No — a submitted campaign cannot be withdrawn without re-registering':'Yes — routing can be changed at any time'}</dd>
+      </dl>
+      <div class="alertbox" style="margin-top:13px"><h4>Why this needs you</h4>
+        <p>${t.id==='t10'
+          ? 'A2P registration submits this business&rsquo;s legal name, EIN and sample messages to the carriers. A rejected brief costs days and a re-submission fee, and the details come from the client, not from me.'
+          : 'Provisioning a number bills the agency and changes how calls to this business are answered. I don&rsquo;t make billing decisions on my own.'}</p></div>
+      <div class="spec"><div class="sh"><span class="eyebrow">Exactly what I will send</span></div>
+        <pre>${esc(t.logs[t.id==='t10'?1:0].tech)}</pre></div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn" id="mReject">Reject</button>
+      <button class="btn" id="mAsk">${ic('bot')}Ask about this</button>
+      <div class="sp"></div>
+      <button class="btn pri" id="mApprove">${ic('check')}Approve &amp; continue</button>
+    </div></div>`);
+  $('#mApprove').onclick=()=>{ closeModal(); S.run.approved[t.id]=1; S.run.state='running'; S.run.ts[t.id]='run'; S.run.li=0; repaintWork(); wait(400); toast('Approved — agent resumed'); };
+  $('#mReject').onclick=()=>{ closeModal(); S.run.ts[t.id]='skip'; S.run.cur++; S.run.state='running'; repaintWork(); wait(400); toast('Task skipped'); };
+  $('#mAsk').onclick=()=>{ closeModal(); openChat(); ask(t.id==='t10'?'What exactly gets submitted to the carriers?':'Explain the phone setup'); };
+}
+function openHandoff(t){
+  const inst = t.id==='t3'
+   ? ['Open the FenceOS agency view → <b>Settings → Snapshots</b>','Select <b>FenceOS Master v4.2</b>','Push to <span class="mono">loc_3Ax8Qm</span> — ABC Fence Company — FenceOS','Wait for the push report email, then come back']
+   : ['Open <span class="mono">loc_3Ax8Qm</span> → <b>Settings → Calendars</b>','Set <b>On-Site Estimate</b> and <b>Install Window</b> to active','Assign <b>Dale Whitaker</b> to both','Save, then come back'];
+  modal(`<div class="modal" role="dialog" aria-modal="true">
+    <div class="modal-head">
+      <div class="mi" style="background:var(--hand-soft);color:var(--hand)">${ic('hand',17)}</div>
+      <div style="flex:1"><h2>Your turn: ${t.n}</h2>
+      <p class="muted" style="font-size:13px;margin-top:3px">HighLevel exposes no API for this. I've done everything up to it.</p></div>
+    </div>
+    <div class="modal-body">
+      <ol style="margin:2px 0 0;padding-left:19px;font-size:13.5px;line-height:1.75;color:var(--ink-2)">${inst.map(i=>`<li>${i}</li>`).join('')}</ol>
+      <div class="spec"><div class="sh"><span class="eyebrow">What I'll check when you're back</span></div>
+        <pre>${esc(t.logs[0].tech)}</pre></div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn" id="hSkip">Skip this task</button>
+      <button class="btn" id="hOpen">${ic('ext')}Open HighLevel</button>
+      <div class="sp"></div>
+      <button class="btn pri" id="hDone">${ic('check')}I've done it — verify</button>
+    </div></div>`);
+  $('#hDone').onclick=()=>{ closeModal(); S.run.approved[t.id]=1; S.run.state='running'; repaintWork(); wait(700); toast('Verifying your change&hellip;'); };
+  $('#hSkip').onclick=()=>{ closeModal(); S.run.ts[t.id]='skip'; S.run.cur++; S.run.state='running'; repaintWork(); wait(400); };
+  $('#hOpen').onclick=()=>toast('Would open the HighLevel agency view in a new tab');
+}
+function assignNumber(){
+  modal(`<div class="modal" role="dialog" aria-modal="true">
+    <div class="modal-head"><div class="mi" style="background:var(--accent-soft);color:var(--accent)">${ic('phone',17)}</div>
+      <div style="flex:1"><h2>Assign a phone number</h2><p class="muted" style="font-size:13px;margin-top:3px">Local numbers available for Evansville, IN · billed to the FenceOS agency at $1.15/mo</p></div></div>
+    <div class="modal-body">
+      ${['(812) 555-0188','(812) 555-0214','(930) 555-0071'].map((n,i)=>`
+        <label style="display:flex;gap:10px;align-items:center;padding:10px 12px;border:1px solid var(--line);border-radius:var(--r);margin-bottom:7px;cursor:pointer">
+          <input type="radio" name="num" ${i===0?'checked':''} style="accent-color:var(--accent)">
+          <span class="mono" style="font-size:13.5px;font-weight:500">${n}</span>
+          <span class="dim" style="font-size:12px;margin-left:auto">voice + SMS · local</span></label>`).join('')}
+      <p class="dim" style="font-size:12px;margin-top:10px">SMS on this number stays disabled until the A2P campaign clears carrier review.</p>
+    </div>
+    <div class="modal-foot"><button class="btn" onclick="closeModal()">Cancel</button><div class="sp"></div>
+      <button class="btn pri" id="numGo">${ic('check')}Assign &amp; retry task</button></div></div>`);
+  $('#numGo').onclick=()=>{ closeModal(); S.run.fixed=true; retry(); toast('Number assigned — retrying'); };
+}
+function retry(){
+  const t=TASKS[S.run.cur];
+  S.run.ts[t.id]='run'; S.run.li=0; S.run.state='running'; repaintWork(); wait(500);
+}
+function bindWorkControls(){
+  const on=(id,fn)=>{const e=$('#'+id); if(e) e.onclick=fn;};
+  on('cPause',()=>{ S.run.state='paused'; clearTimeout(S.run.timer); repaintWork(); toast('Agent paused'); });
+  on('cResume',()=>{ if(S.run.state==='blocked'){ const t=TASKS[S.run.cur]; t.mode==='handoff'?openHandoff(t):openApproval(t); return; } S.run.state='running'; repaintWork(); wait(300); });
+  on('cRetry',retry);
+  on('cSkip',()=>{ const t=TASKS[S.run.cur]; S.run.ts[t.id]='skip'; S.run.cur++; S.run.state='running'; repaintWork(); wait(400); toast('Task skipped — recorded in the audit log'); });
+  on('cApprove',()=>{ const t=TASKS[S.run.cur]; t.mode==='handoff'?openHandoff(t):openApproval(t); });
+  on('cStop',()=>{ S.run.state='paused'; clearTimeout(S.run.timer); repaintWork(); toast('Setup stopped. Nothing is rolled back — resume any time.'); });
+  on('cVerify',()=>{ S.view='account'; render(); window.scrollTo(0,0); });
+  on('assignNum',assignNumber);
+  on('retryTask',retry);
+  on('skipTask',()=>{ const t=TASKS[S.run.cur]; S.run.ts[t.id]='skip'; S.run.cur++; S.run.state='running'; repaintWork(); wait(400); toast('Continuing without the phone step'); });
+  on('openHand',()=>openHandoff(TASKS[S.run.cur]));
+  on('openApp',()=>openApproval(TASKS[S.run.cur]));
+}
+function bindWork(){
+  $$('[data-task]').forEach(b=>b.onclick=()=>{ S.run.sel=b.dataset.task; repaintWork(); });
+  $$('[data-pane]').forEach(b=>b.onclick=()=>{ S.mobPane=b.dataset.pane; render(); });
+  const tb=$('#techBtn2'); if(tb) tb.onclick=toggleTech;
+  const sp=$('#spdBtn'); if(sp) sp.onclick=()=>{ S.run.speed = S.run.speed===1?2:S.run.speed===2?4:1; sp.textContent=S.run.speed+'×'; };
+  bindWorkControls();
+  const w=$('#logwrap'); if(w) w.scrollTop=w.scrollHeight;
+}
+function toggleTech(){ S.tech=!S.tech; document.body.classList.toggle('tech',S.tech);
+  const a=$('#techBtn2'),b=$('#techBtn'); const l=(S.tech?'Hide':'Show')+' technical detail';
+  if(a)a.textContent=l; if(b)b.textContent=l; }
+</script>
+<script>
+/* ============================================================
+   VIEW · VERIFICATION
+   ============================================================ */
+function checkState(c){
+  if(!S.run.fixed) return c.s;
+  if(c.n==='Phone number & IVR') return 'pass';
+  if(c.n==='AI receptionist configured') return 'pass';
+  return c.s;
+}
+function score(){
+  const w={pass:1,warn:.75,fail:0};
+  return Math.round(CHECKS.reduce((a,c)=>a+w[checkState(c)],0)/CHECKS.length*100);
+}
+function vVerify(){
+  const f=S.findFilter||'all';
+  const rows=[];
+  ACCOUNTS.forEach(ac=>openFindings(ac.id).forEach(x=>rows.push({ac,...x})));
+  const shown=rows.filter(r=>f==='all'||r.v===f);
+  const counts={all:rows.length};
+  rows.forEach(r=>counts[r.v]=(counts[r.v]||0)+1);
+  return `<div style="max-width:1080px">
+  <div class="sec-head"><h1>Findings</h1><div class="sp"></div>
+    <span class="dim" style="font-size:12.5px">Everything the agent flagged, across every subaccount</span></div>
+  <div class="card">
+    <div class="pad" style="border-bottom:1px solid var(--line);display:flex;gap:9px;align-items:center;flex-wrap:wrap">
+      <div class="filters">
+        ${[['all','All'],['missing','Missing'],['mismatch','Mismatch'],['client','Needs client']].map(([k,l])=>
+          `<button class="btn sm ${k===f?'on':''}" data-ff="${k}">${l}${counts[k]?` <span class="num" style="opacity:.65">${counts[k]}</span>`:''}</button>`).join('')}
+      </div>
+      <div class="sp" style="margin-left:auto"></div>
+      <button class="btn sm" onclick="toast('Would re-audit every subaccount')">${ic('redo')}Re-audit all</button>
+    </div>
+    ${shown.length?shown.map((r,i)=>{
+      const v=VERDICT[r.v], conflict=isMarked(r.ac.id,r.k);
+      return `<button class="check" data-fx="${i}" style="width:100%">
+        <span class="ci" style="background:var(--${v.col})">${ic(v.g||'alert',10)}</span>
+        <span style="flex:1;min-width:0">
+          <b>${r.it.n}</b>
+          <span class="sub">${esc(r.ac.name)} &middot; ${r.it.gname}${conflict?' &middot; <span style="color:var(--crit)">you marked this done</span>':''}</span>
+          <span class="sub" style="color:var(--ink-2);margin-top:2px">${r.found}</span>
+        </span>
+        <span class="chip ${v.c}" style="align-self:center;margin-right:8px"><i class="dot"></i>${v.l}</span>
+        <span class="caret">${ic('chev',14)}</span></button>`;
+    }).join('')
+    :`<div class="pad"><p class="dim" style="font-size:13px">Nothing flagged at this filter.</p></div>`}
+  </div></div>`;
+}
+function bindVerify(){
+  $$('[data-ff]').forEach(b=>b.onclick=()=>{ S.findFilter=b.dataset.ff; render(); });
+  const rows=[]; ACCOUNTS.forEach(ac=>openFindings(ac.id).forEach(x=>rows.push({ac,...x})));
+  const f=S.findFilter||'all';
+  const shown=rows.filter(r=>f==='all'||r.v===f);
+  $$('[data-fx]').forEach(b=>b.onclick=()=>{ const r=shown[b.dataset.fx]; S.acct=r.ac.id; openFinding(r,r.ac); });
+}
+function fixWithAI(){
+  modal(`<div class="modal" role="dialog" aria-modal="true">
+    <div class="modal-head"><div class="mi" style="background:var(--accent-soft);color:var(--accent)">${ic('bot',17)}</div>
+      <div style="flex:1"><h2>Fix issues with AI</h2><p class="muted" style="font-size:13px;margin-top:3px">Here's what I can and can't fix on my own</p></div></div>
+    <div class="modal-body">
+      <div style="display:grid;gap:9px">
+        <div style="display:flex;gap:9px;padding:11px 12px;border:1px solid var(--line);border-radius:var(--r)">
+          <span style="color:var(--crit)">${ic('x',15)}</span><div><b style="font-size:13px">Phone number &amp; IVR</b>
+          <p class="muted" style="font-size:12.5px;margin-top:2px">I need you to authorize the number — it bills the agency. Once assigned I'll build the routing menu and attach the receptionist without further input.</p>
+          <button class="btn sm pri" style="margin-top:8px" id="fxNum">Assign number</button></div></div>
+        <div style="display:flex;gap:9px;padding:11px 12px;border:1px solid var(--line);border-radius:var(--r)">
+          <span style="color:var(--warn)">${ic('alert',15)}</span><div><b style="font-size:13px">6 workflows paused pending A2P</b>
+          <p class="muted" style="font-size:12.5px;margin-top:2px">Nothing to fix — the configuration is correct. Carrier review is external and typically clears in 1–3 business days. I'll resume these automatically the moment campaign <span class="mono" style="font-size:11.5px">cmp_7T4</span> is approved, and tell you when it happens.</p></div></div>
+      </div>
+    </div>
+    <div class="modal-foot"><button class="btn" onclick="closeModal()">Close</button><div class="sp"></div>
+      <button class="btn pri" id="fxAll">${ic('check')}Assign number &amp; fix everything I can</button></div></div>`);
+  const doFix=()=>{ closeModal(); toast('Assigning number and rebuilding the IVR&hellip;');
+    setTimeout(()=>{ S.run.fixed=true; S.run.ts.t11='done'; S.run.state='done';
+      TASKS.find(t=>t.id==='t11').altLogs.forEach(l=>appendLog(TASKS.find(t=>t.id==='t11'),l,false));
+      render(); toast('Fixed — verification is now at '+score()+'%'); },1500); };
+  $('#fxNum').onclick=doFix; $('#fxAll').onclick=doFix;
+}
+
+/* ============================================================
+   VIEW · COMPLETE
+   ============================================================ */
+function vDone(){
+  return `<div class="done-hero">
+    <div class="seal">${ic('check',31)}</div>
+    <h1>FenceOS setup complete</h1>
+    <p class="muted" style="margin-top:8px;max-width:52ch;margin-inline:auto">${esc(S.form.bname)} is configured and answering. One item is still with the carriers — I'm watching it and will finish the last six workflows on my own when it clears.</p>
+    <div style="display:flex;gap:8px;justify-content:center;margin-top:14px;flex-wrap:wrap">
+      <span class="chip c-ok"><i class="dot"></i>Ready</span>
+      <span class="chip c-idle mono" style="font-family:var(--mono);font-weight:400">loc_3Ax8Qm</span>
+      <span class="chip c-warn"><i class="dot"></i>A2P pending carrier review</span>
+    </div>
+    <div class="sum-grid">
+      <div class="sum"><b class="num">15</b><span>tasks completed</span></div>
+      <div class="sum"><b class="num">18</b><span>workflows installed</span></div>
+      <div class="sum"><b class="num">24</b><span>custom values populated</span></div>
+      <div class="sum"><b>(812) 555-0188</b><span>primary line · IVR live</span></div>
+      <div class="sum"><b>Voice AI</b><span>receptionist answering</span></div>
+      <div class="sum"><b class="num">${score()}%</b><span>verification score</span></div>
+    </div>
+    <div class="btn-row" style="justify-content:center">
+      <button class="btn pri lg" onclick="toast('Would open the subaccount in HighLevel')">${ic('ext')}Open subaccount</button>
+      <button class="btn lg" onclick="go('audit')">View setup report</button>
+      <button class="btn lg" onclick="toast('Would re-run the test lead and automation checks')">Run tests</button>
+      <button class="btn lg" onclick="toast('Would start a new setup pre-filled with this configuration')">${ic('copy')}Duplicate configuration</button>
+    </div>
+    <p class="dim" style="font-size:12px;margin-top:22px">Next: the tracking sheet row is drafted and ready to paste — Pipeline Stage <span class="mono">Initial Setup Complete</span>, A2P <span class="mono">In Progress</span>.</p>
+  </div>`;
+}
+function bindDone(){}
+
+/* ============================================================
+   VIEW · AUDIT LOG
+   ============================================================ */
+const SEED_AUDIT=[
+  {time:'9:58 AM',task:'Verification',msg:'Ran 12 configuration checks on Pioneer Fence Group',kind:'warnl',tech:'10 pass · 2 warn · 0 fail'},
+  {time:'9:31 AM',task:'Build brand board',msg:'Rendered and uploaded 3 assets for Blue Ridge Fencing LLC',kind:'ok',tech:'logo 350×180 · icon 300×300 · banner 1819×646'},
+  {time:'8:47 AM',task:'Create HighLevel subaccount',msg:'Created location loc_9Wt1 — Blue Ridge Fencing LLC',kind:'ok',tech:'POST /v1/locations/ → 201 Created'}
+];
+function vAudit(){
+  const rows = S.run.logs.length? S.run.logs.slice().reverse() : SEED_AUDIT;
+  return `<div class="sec-head"><h1>Audit log</h1><div class="sp"></div></div>
+  <div class="card">
+    <div class="pad" style="border-bottom:1px solid var(--line);display:flex;gap:9px;align-items:center;flex-wrap:wrap">
+      <div class="filters">
+        <button class="btn sm on" data-flt="all">All</button>
+        <button class="btn sm" data-flt="ok">Success</button>
+        <button class="btn sm" data-flt="warnl">Warning</button>
+        <button class="btn sm" data-flt="faill">Failed</button>
+        <button class="btn sm" data-flt="hand">Human step</button>
+      </div>
+      <div class="sp" style="margin-left:auto"></div>
+      <div class="srch">${ic('srch')}<input id="auditSearch" placeholder="Search actions"></div>
+    </div>
+    <div class="scroll-x">
+    <table class="tbl"><thead><tr>
+      <th style="width:88px">Time</th><th style="width:96px">Agent</th><th>Action</th>
+      <th class="hide-sm">Target</th><th style="width:104px">Result</th><th style="width:24px"></th>
+    </tr></thead><tbody id="auditBody">
+    ${rows.map((r,i)=>{
+      const res={ok:['c-ok','Success'],run:['c-run','Running'],warnl:['c-warn','Warning'],faill:['c-crit','Failed'],hand:['c-hand','Handed off']}[r.kind]||['c-idle','Info'];
+      return `<tr class="audit-row" data-a="${i}" data-k="${r.kind}" data-s="${esc((r.msg+' '+r.task).toLowerCase())}">
+        <td class="mono dim" style="font-size:11.5px;white-space:nowrap">${r.time}</td>
+        <td class="muted" style="font-size:12.5px">Setup Agent</td>
+        <td><b style="font-weight:500">${esc(r.msg)}</b><div class="dim" style="font-size:11.5px">${esc(r.task)}</div></td>
+        <td class="mono dim hide-sm" style="font-size:11.5px">loc_3Ax8Qm</td>
+        <td><span class="chip ${res[0]}">${res[1]}</span></td>
+        <td class="dim">${ic('chev',13)}</td></tr>
+      <tr class="audit-detail hide" data-ad="${i}"><td colspan="6"><div class="inner">
+        ${r.tech?`<pre>${esc(r.tech)}</pre>`:'<span class="dim" style="font-size:12.5px">No technical payload recorded for this entry.</span>'}
+      </div></td></tr>`;
+    }).join('')}
+    </tbody></table></div>
+  </div>
+  ${S.run.logs.length?'':'<p class="dim" style="font-size:12.5px;margin-top:12px">Showing agency-wide entries. Run a setup to populate this account&rsquo;s log.</p>'}`;
+}
+function bindAudit(){
+  $$('.audit-row').forEach(r=>r.onclick=()=>{ const d=$(`[data-ad="${r.dataset.a}"]`); d.classList.toggle('hide'); });
+  const s=$('#auditSearch');
+  if(s) s.oninput=()=>{const q=s.value.toLowerCase();$$('.audit-row').forEach(r=>{const hit=r.dataset.s.includes(q);r.style.display=hit?'':'none';$(`[data-ad="${r.dataset.a}"]`).classList.add('hide');});};
+  $$('[data-flt]').forEach(b=>b.onclick=()=>{
+    $$('[data-flt]').forEach(x=>x.classList.remove('on')); b.classList.add('on');
+    const f=b.dataset.flt;
+    $$('.audit-row').forEach(r=>{ r.style.display = (f==='all'||r.dataset.k===f)?'':'none'; $(`[data-ad="${r.dataset.a}"]`).classList.add('hide'); });
+  });
+}
+</script>
+<script>
+/* ============================================================
+   AUDIT MODEL — the agent VERIFIES, the specialist MARKS.
+   Two independent signals per item:
+     mark   : the specialist ticked it ("I did this")
+     verdict: what the agent found in HighLevel
+   Where they disagree, that is a finding.
+   ============================================================ */
+const VERDICT = {
+  ok       :{l:'Verified',       c:'c-ok',   col:'ok',    g:'check'},
+  missing  :{l:'Missing',        c:'c-crit', col:'crit',  g:'x'},
+  mismatch :{l:'Mismatch',       c:'c-warn', col:'warn',  g:'alert'},
+  client   :{l:'Needs client',   c:'c-hand', col:'hand',  g:'hand'},
+  nocheck  :{l:'Manual check',   c:'c-idle', col:'idle',  g:''},
+  unchecked:{l:'Not checked',    c:'c-idle', col:'idle',  g:''}
+};
+const GROUPS = [
+ {id:'biz', n:'Business Information', src:'Settings &rarr; Business Profile',
+  d:'Every field on the subaccount&rsquo;s business profile. A2P review compares these against the CP-575, so a typo here costs a rejection.',
+  items:[
+   {id:'bn',  n:'Business Name',            h:'Must match the legal name on the CP-575 exactly'},
+   {id:'fbn', n:'Friendly Business Name',   h:'What appears in client-facing messages'},
+   {id:'bem', n:'Business Email'},
+   {id:'bph', n:'Business Phone'},
+   {id:'bws', n:'Business Website',         h:'Must be live and reachable for A2P'},
+   {id:'bad', n:'Street Address'},
+   {id:'bct', n:'City'},
+   {id:'bst', n:'State / Province'},
+   {id:'bzp', n:'Postal Code'},
+   {id:'bco', n:'Country'},
+   {id:'btz', n:'Time Zone',                h:'Drives every calendar and workflow delay'},
+   {id:'bnc', n:'Business Niche / Industry'},
+   {id:'ein', n:'EIN + CP-575 on file',     h:'Required before A2P submission', m:1},
+   {id:'pc',  n:'Primary contact name, email, phone'}
+  ]},
+ {id:'brand', n:'Branding', src:'Settings &rarr; Business Profile / Media',
+  d:'Brand assets at FenceOS dimensions, plus the values templates render from.',
+  items:[
+   {id:'logo',  n:'Business Logo uploaded',   h:'350 × 180'},
+   {id:'icon',  n:'Icon uploaded',            h:'300 × 300'},
+   {id:'banner',n:'Email banner uploaded',    h:'1819 × 646'},
+   {id:'col1',  n:'Primary brand colour set'},
+   {id:'col2',  n:'Secondary brand colour set'},
+   {id:'font',  n:'Brand fonts configured'},
+   {id:'tone',  n:'Brand tone recorded',      m:1}
+  ]},
+ {id:'cal', n:'Calendars', src:'Calendars',
+  d:'Every calendar active, bookable and correctly assigned. Inactive calendars are the most common silent failure.',
+  items:[
+   {id:'cex',  n:'Required calendars exist'},
+   {id:'cact', n:'All calendars active'},
+   {id:'cbook',n:'Available for booking'},
+   {id:'cusr', n:'Assigned users linked to each calendar'},
+   {id:'cav',  n:'Availability and hours configured'},
+   {id:'cdur', n:'Duration, buffer and slot interval set'},
+   {id:'ctz',  n:'Calendar time zone matches the business'},
+   {id:'cnot', n:'Confirmation and reminder notifications on'},
+   {id:'cgs',  n:'Google Calendar sync connected'},
+   {id:'ctest',n:'Test booking completed',    m:1}
+  ]},
+ {id:'users', n:'Users & Permissions', src:'Settings &rarr; My Staff',
+  d:'Who can get into the account, and whether they will actually be notified.',
+  items:[
+   {id:'uown', n:'Owner added'},
+   {id:'usta', n:'Staff added (if applicable)'},
+   {id:'urol', n:'Roles and permissions correct'},
+   {id:'uph',  n:'Phone number on each user profile'},
+   {id:'ugs',  n:'Google Calendar connected per user'},
+   {id:'unot', n:'Notification settings configured'}
+  ]},
+ {id:'assets', n:'Customer Assets', src:'Sites / Calendars',
+  d:'What the client&rsquo;s customer actually touches.',
+  items:[
+   {id:'awid', n:'Chat Widget customised'},
+   {id:'afun', n:'Appointment Funnel updated'},
+   {id:'acal', n:'Calendar connected to the funnel'},
+   {id:'abrd', n:'Client branding applied to both'}
+  ]},
+ {id:'crm', n:'CRM', src:'Settings &rarr; Custom Values / Custom Fields',
+  d:'The data layer every template and workflow reads from. Empty custom values render as raw merge tags in client-facing messages.',
+  items:[
+   {id:'kval', n:'Custom Values configured',  h:'No placeholder left empty'},
+   {id:'kfld', n:'Custom Fields updated'},
+   {id:'kfrm', n:'Contact Us form configured'},
+   {id:'kemail',n:'Internal notification email configured'},
+   {id:'kpipe',n:'Opportunity pipeline and stages correct'},
+   {id:'ktag', n:'Tags configured'}
+  ]},
+ {id:'phone', n:'Phone', src:'Settings &rarr; Phone Numbers',
+  d:'Nothing in SMS or Voice AI works until a number exists on the subaccount.',
+  items:[
+   {id:'pbuy', n:'Phone number purchased'},
+   {id:'pcon', n:'Phone number connected to the subaccount'},
+   {id:'pfwd', n:'Call forwarding / routing set'},
+   {id:'pvm',  n:'Voicemail configured'}
+  ]},
+ {id:'dom', n:'Domains & DNS', src:'Settings &rarr; Domains',
+  d:'Records the client&rsquo;s developer has to add. Never assume propagation — check it.',
+  items:[
+   {id:'dem',  n:'Email Services DNS records added'},
+   {id:'dcal', n:'Calendar subdomain DNS records added'},
+   {id:'dver', n:'All DNS records verified correct'},
+   {id:'dprop',n:'DNS propagation confirmed'}
+  ]},
+ {id:'web', n:'Website', src:'Client website',
+  d:'The developer&rsquo;s work, verified on the live site rather than taken on trust.',
+  items:[
+   {id:'wwid', n:'Chat Widget installed and loading'},
+   {id:'wfrm', n:'Contact Form installed'},
+   {id:'wsub', n:'Form submissions arrive in the CRM'},
+   {id:'wnot', n:'Internal notification emails trigger'},
+   {id:'wpp',  n:'Privacy Policy live and public'},
+   {id:'wtc',  n:'Terms & Conditions live and public'}
+  ]},
+ {id:'a2p', n:'A2P Compliance', src:'Settings &rarr; Trust Center',
+  d:'Carrier review compares the site and the account against the legal identity. Every line here has caused a rejection at least once.',
+  items:[
+   {id:'app',  n:'Privacy Policy meets A2P requirements'},
+   {id:'atc',  n:'Terms & Conditions meet A2P requirements'},
+   {id:'ain',  n:'Opt-in language verified'},
+   {id:'aout', n:'Opt-out (STOP / HELP) language verified'},
+   {id:'abrd', n:'Business branding matches the A2P application'},
+   {id:'afrm', n:'Contact form complies with A2P requirements'},
+   {id:'asub', n:'A2P submitted',  m:1},
+   {id:'aapp', n:'A2P approved',   m:1, h:'External — carrier decision, not ours'}
+  ]},
+ {id:'ai', n:'AI', src:'Settings &rarr; AI Agents',
+  d:'Built is not the same as working. Both agents get reviewed and then tested.',
+  items:[
+   {id:'vrev', n:'Voice AI reviewed'},
+   {id:'vtst', n:'Voice AI tested',        m:1},
+   {id:'crev', n:'Conversation AI reviewed'},
+   {id:'ctst', n:'Conversation AI tested', m:1},
+   {id:'akb',  n:'Knowledge base populated'}
+  ]},
+ {id:'sms', n:'SMS Testing', src:'Conversations',
+  d:'End-to-end message tests. Only meaningful once A2P has cleared.',
+  items:[
+   {id:'sout', n:'Outbound SMS tested',    m:1},
+   {id:'sin',  n:'Inbound SMS tested',     m:1},
+   {id:'saut', n:'SMS automations tested', m:1}
+  ]},
+ {id:'qa', n:'Final QA', src:'—',
+  d:'The gate. Nothing here can be ticked while another group has an open finding.',
+  items:[
+   {id:'qall', n:'All onboarding tasks completed'},
+   {id:'qmis', n:'No missing configurations'},
+   {id:'qrev', n:'Final review completed', m:1},
+   {id:'qrdy', n:'Subaccount ready for client use', m:1}
+  ]}
+];
+let ALL_ITEMS=[], ITEM={}, TOTAL_ITEMS=0;
+function reindex(){
+  ALL_ITEMS = GROUPS.flatMap(g=>g.items.map(i=>({...i, gid:g.id, gname:g.n})));
+  ITEM = Object.fromEntries(ALL_ITEMS.map(i=>[i.id+'@'+i.gid, i]));
+  TOTAL_ITEMS = ALL_ITEMS.length;
+}
+reindex();
+const key = (gid,iid)=>iid+'@'+gid;
+
+/* seeded state: which items the specialist has marked, and what the agent found */
+const SEED = {
+  loc_7Kq2:{marks:'all'},
+  loc_9Wt1:{marks:'all'},
+  loc_2Hs6:{marks:{biz:'all',brand:'all',cal:8,users:5,assets:'all',crm:'all',phone:'all',dom:'all',web:'all',a2p:'all',ai:'all',sms:'all',qa:2},
+    find:{'cgs@cal':['missing','No Google account linked on the staff profile'],
+          'ugs@users':['missing','usr_Mm4 has no Google connection']}},
+  loc_4Bn9:{marks:{biz:'all',brand:'all',cal:'all',users:'all',assets:'all',crm:'all',phone:2,dom:'all',web:4,a2p:6,ai:'all',sms:0,qa:1},
+    find:{'pbuy@phone':['client','Virtual number not yet purchased — verified in JobTreker'],
+          'wpp@web':['client','Website updates still with the developer'],
+          'wtc@web':['client','Website updates still with the developer']}},
+  loc_5Ld3:{marks:{biz:'all',brand:'all',cal:'all',users:'all',assets:'all',crm:'all',phone:0,dom:'all',web:'all',a2p:6,ai:4,sms:0,qa:0},
+    find:{'pbuy@phone':['missing','No number on the subaccount — purchase pending'],
+          'pcon@phone':['missing','Nothing to connect until a number exists'],
+          'asub@a2p':['missing','Cannot file without an assigned number']}},
+  loc_8Vc4:{marks:{biz:'all',brand:'all',cal:'all',users:'all',assets:3,crm:'all',phone:0,dom:1,web:2,a2p:2,ai:3,sms:0,qa:0},
+    find:{'dem@dom':['client','Waiting on the client&rsquo;s DNS provider'],
+          'dcal@dom':['client','Waiting on the client&rsquo;s DNS provider'],
+          'dprop@dom':['missing','No records resolving yet'],
+          'pbuy@phone':['missing','No number purchased'],
+          'wpp@web':['client','Privacy Policy not published yet'],
+          'wtc@web':['client','Terms &amp; Conditions not published yet']}},
+  loc_1Gp7:{marks:{biz:12,brand:'all',cal:'all',users:4,assets:2,crm:5,phone:0,dom:0,web:1,a2p:1,ai:2,sms:0,qa:0},
+    find:{'bws@biz':['missing','Website field empty on the business profile'],
+          'ein@biz':['client','CP-575 not supplied by the client'],
+          'dem@dom':['client','DNS records being prepared'],
+          'pbuy@phone':['missing','No number purchased']}},
+  loc_3Rt5:{marks:{biz:11,brand:'all',cal:'all',users:4,assets:2,crm:'all',phone:0,dom:0,web:0,a2p:0,ai:3,sms:0,qa:0},
+    find:{'bn@biz':['mismatch','Profile reads &ldquo;Bee Fencing&rdquo;; CP-575 reads &ldquo;Bee Fencing LLC&rdquo;'],
+          'bws@biz':['missing','Website field empty'],
+          'ein@biz':['client','CP-575 not supplied'],
+          'dem@dom':['client','Developer has no access to the domain'],
+          'dcal@dom':['client','Developer has no access to the domain'],
+          'pbuy@phone':['missing','No number purchased'],
+          'wpp@web':['client','No Privacy Policy on the site'],
+          'wtc@web':['client','No Terms &amp; Conditions on the site']}},
+  loc_6Yu2:{marks:{biz:9,brand:3,cal:0,users:2,assets:0,crm:0,phone:0,dom:0,web:0,a2p:0,ai:0,sms:0,qa:0},
+    find:{'btz@biz':['missing','Time zone still on the agency default'],
+          'bnc@biz':['missing','Business niche not set'],
+          'logo@brand':['client','Logo not supplied on the branding form']}}
+};
+
+/* live marks */
+const MARKS = {};
+ACCOUNTS.forEach(a=>{
+  const sd = SEED[a.id]||{marks:{}};
+  const set = new Set();
+  GROUPS.forEach(g=>{
+    const spec = sd.marks==='all' ? 'all' : (sd.marks[g.id]!==undefined ? sd.marks[g.id] : 0);
+    const n = spec==='all' ? g.items.length : spec;
+    g.items.slice(0,n).forEach(it=>set.add(key(g.id,it.id)));
+  });
+  MARKS[a.id]=set;
+});
+const FIND = {};
+ACCOUNTS.forEach(a=>{ FIND[a.id] = (SEED[a.id]&&SEED[a.id].find)||{}; });
+
+const isMarked = (aid,k)=>MARKS[aid].has(k);
+function verdictOf(aid,k){
+  const f=FIND[aid][k]; if(f) return f[0];
+  const it=ITEM[k];
+  if(!isMarked(aid,k)) return 'unchecked';
+  return (it&&it.m) ? 'nocheck' : 'ok';
+}
+const foundOf=(aid,k)=> (FIND[aid][k]||[])[1] || '';
+function toggleMark(aid,k){ MARKS[aid].has(k)?MARKS[aid].delete(k):MARKS[aid].add(k); render(); }
+function toggleGroup(aid,g){
+  const ks=g.items.map(i=>key(g.id,i.id));
+  const all=ks.every(k=>MARKS[aid].has(k));
+  ks.forEach(k=>all?MARKS[aid].delete(k):MARKS[aid].add(k));
+  render();
+}
+const markedCount = aid=>MARKS[aid].size;
+const findingsOf = aid=>Object.keys(FIND[aid]).map(k=>({k, v:FIND[aid][k][0], found:FIND[aid][k][1], it:ITEM[k]})).filter(f=>f.it);
+const openFindings = aid=>findingsOf(aid).filter(f=>f.v!=='ok');
+const clientBlocked = aid=>openFindings(aid).filter(f=>f.v==='client');
+
+/* readiness + pipeline stage now come from the audit */
+function readiness(id){ return Math.round(markedCount(id)/TOTAL_ITEMS*100); }
+function groupStat(aid,g){
+  const ks=g.items.map(i=>key(g.id,i.id));
+  return {done:ks.filter(k=>MARKS[aid].has(k)).length, total:ks.length,
+          issues:ks.filter(k=>['missing','mismatch','client'].includes(verdictOf(aid,k))).length};
+}
+const STAGE_ORDER = ['creation','review','dns','phonep','a2p','done','hold'];
+function derivedStage(id){
+  const g=gid=>groupStat(id,GROUPS.find(x=>x.id===gid));
+  if(markedCount(id)===TOTAL_ITEMS && !openFindings(id).length) return 'done';
+  if(g('biz').done<8) return 'creation';
+  if(g('dom').issues) return 'dns';
+  if(g('phone').issues) return 'phonep';
+  if(g('a2p').done===g('a2p').total) return 'a2p';
+  return 'review';
+}
+const OVERRIDE={};
+ACCOUNTS.forEach(a=>{ if(a.status!==derivedStage(a.id)) OVERRIDE[a.id]=a.status; });
+const acctStage = id=>OVERRIDE[id]||derivedStage(id);
+
+/* notes */
+const NOTES={}; let noteSeq=1;
+ACCOUNTS.forEach(a=>{ NOTES[a.id]= a.note?[{id:noteSeq++,at:'Sep 5, 2026',who:'Ryan Malaluan',text:a.note}]:[]; });
+const latestNote = id=>(NOTES[id]&&NOTES[id].length)?NOTES[id][NOTES[id].length-1].text:'';
+</script>
+<script>
+/* ============================================================
+   VIEW · SUBACCOUNT AUDIT
+   ============================================================ */
+const DNS_RECORDS=[['CNAME','link','sites.leadconnectorhq.com'],['CNAME','booking','sites.leadconnectorhq.com'],['TXT','@','v=spf1 include:mailgun.org ~all'],['CNAME','em1234','mailgun.org']];
+function vAccount(){
+  const a = ACCOUNTS.find(x=>x.id===S.acct)||ACCOUNTS[0];
+  const pctv = readiness(a.id);
+  const fnd = openFindings(a.id);
+  const cli = clientBlocked(a.id);
+  const ready = markedCount(a.id)===TOTAL_ITEMS && !fnd.length;
+  const b = BLOCK[a.block];
+  S.openG = S.openG || {};
+  return `
+  <div style="max-width:1180px">
+  <div class="card" style="margin-bottom:16px">
+    <div class="pad" style="display:flex;gap:16px;align-items:flex-start;flex-wrap:wrap">
+      <div class="biz" style="gap:12px">
+        <div class="sq" style="width:40px;height:40px;font-size:14px;border-radius:9px">${a.init}</div>
+        <div><h1 style="font-size:21px">${esc(a.name)}</h1>
+          <div class="split" style="margin-top:5px;flex-wrap:wrap">
+            <span class="mono dim" style="font-size:12px">${a.id}</span><span class="dim">&middot;</span>
+            <span class="muted" style="font-size:12.5px">Owner ${esc(a.city)}</span><span class="dim">&middot;</span>
+            <span class="muted" style="font-size:12.5px">${a.days}d in stage</span>
+          </div></div>
+      </div>
+      <div class="sp" style="margin-left:auto"></div>
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;justify-content:flex-end">
+        <div style="display:flex;flex-direction:column;gap:3px;align-items:flex-end">
+          <select id="stageSel" style="background:var(--panel);border:1px solid var(--line-2);border-radius:var(--r-sm);padding:5px 9px;font-size:12.5px;font-weight:600;font-family:var(--disp)">
+            ${STAGE_ORDER.map(k=>`<option value="${k}" ${k===acctStage(a.id)?'selected':''}>${STATUS[k].l}</option>`).join('')}
+          </select>
+          <span class="dim" style="font-size:10.5px">${OVERRIDE[a.id]?`Manual &middot; audit suggests <b>${STATUS[derivedStage(a.id)].l}</b>`:'Derived from the audit'}</span>
+        </div>
+        ${a.block==='none'?'':`<span class="chip ${b.c}"><i class="dot"></i>Blocked on ${b.l.toLowerCase()}</span>`}
+        ${ready?'<span class="chip c-ok"><i class="dot"></i>Ready</span>':'<span class="chip c-idle">Not ready</span>'}
+      </div>
+    </div>
+    <div class="pad" style="padding-top:0">
+      <div class="split" style="gap:10px;margin-bottom:7px;flex-wrap:wrap">
+        <b class="num" style="font-family:var(--disp);font-size:22px;font-weight:700;letter-spacing:-.02em">${pctv}%</b>
+        <span class="dim" style="font-size:12.5px">${markedCount(a.id)} of ${TOTAL_ITEMS} items checked off${fnd.length?` &middot; <span style="color:var(--crit)">${fnd.length} finding${fnd.length===1?'':'s'}</span>`:''}${cli.length?` &middot; <span style="color:var(--hand)">${cli.length} waiting on the client</span>`:''}</span>
+      </div>
+      <div class="meter ${fnd.filter(f=>f.v!=='client').length?'crit':cli.length?'warn':pctv===100?'ok':''}"><i style="width:${pctv}%"></i></div>
+      <p class="dim" style="font-size:11.5px;margin-top:7px">You tick what you have done. The agent reads the subaccount and says whether it agrees.</p>
+    </div>
+    <div class="pad" style="border-top:1px solid var(--line);display:flex;gap:8px;flex-wrap:wrap">
+      <button class="btn pri" id="runAudit">${ic('bot')}Run audit</button>
+      <button class="btn" onclick="go('audit')">${ic('list')}Activity log</button>
+      <button class="btn" onclick="toast('Would open this subaccount in HighLevel')">${ic('ext')}Open in HighLevel</button>
+      <div class="sp" style="margin-left:auto"></div>
+      <button class="btn" id="expandAll">Expand all</button>
+    </div>
+  </div>
+
+  <div class="grid-2" style="grid-template-columns:1fr 390px">
+    <div style="display:flex;flex-direction:column;gap:12px">
+    ${GROUPS.map((g,gi)=>{
+      const st=groupStat(a.id,g), open=S.openG[g.id]!==undefined?S.openG[g.id]:(gi===0);
+      const complete = st.done===st.total && !st.issues;
+      return `<div class="card">
+        <div class="gh ${open?'open':''}" data-g="${g.id}">
+          <button class="gtick ${complete?'on':st.done?'part':''}" data-gall="${g.id}" title="Tick or clear the whole group">${complete?ic('check',11):st.done?'<i></i>':''}</button>
+          <button class="gmain" data-gopen="${g.id}">
+            <span style="flex:1;min-width:0">
+              <b>${gi+1}. ${g.n}</b>
+              <span class="gsrc">${g.src}</span>
+            </span>
+            <span class="num dim" style="font-size:12px;flex:none">${st.done}/${st.total}</span>
+            ${st.issues?`<span class="chip c-crit" style="flex:none"><i class="dot"></i>${st.issues}</span>`:complete?'<span class="chip c-ok" style="flex:none"><i class="dot"></i>Clear</span>':''}
+            <span class="caret" style="flex:none">${ic('chev',14)}</span>
+          </button>
+        </div>
+        <div class="gbody ${open?'':'hide'}" data-gb="${g.id}">
+          <p class="gdesc">${g.d}</p>
+          ${g.items.map(it=>{
+            const k=key(g.id,it.id), mk=isMarked(a.id,k), v=verdictOf(a.id,k), vm=VERDICT[v];
+            const conflict = mk && ['missing','mismatch'].includes(v);
+            return `<div class="item ${conflict?'conflict':''}">
+              <button class="tick ${mk?'on':''}" data-k="${k}" role="checkbox" aria-checked="${mk}" aria-label="${esc(it.n)}">${mk?ic('check',11):''}</button>
+              <div class="ibody">
+                <b class="${mk?'checked':''}">${it.n}</b>
+                ${it.h?`<span class="ihint">${it.h}</span>`:''}
+                ${v!=='ok'&&v!=='unchecked'&&foundOf(a.id,k)?`<span class="ifound">${ic(vm.g||'alert',11)} ${foundOf(a.id,k)}</span>`:''}
+              </div>
+              <span class="chip ${vm.c}" style="flex:none;align-self:center">${vm.g?'<i class="dot"></i>':''}${vm.l}</span>
+            </div>`;
+          }).join('')}
+        </div>
+      </div>`;
+    }).join('')}
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:14px">
+      <div class="card">
+        <div class="pad" style="border-bottom:1px solid var(--line);display:flex;align-items:center">
+          <h2>Findings</h2><div class="sp" style="margin-left:auto"></div>
+          <span class="chip ${fnd.length?'c-crit':'c-ok'}"><i class="dot"></i>${fnd.length}</span>
+        </div>
+        ${fnd.length?fnd.map((f,i)=>`
+          <div class="note" style="cursor:pointer" data-find="${i}">
+            <div class="nhead"><span style="color:var(--${VERDICT[f.v].col});display:flex">${ic(VERDICT[f.v].g||'alert',13)}</span>
+              <b>${f.it.n}</b><span class="chip ${VERDICT[f.v].c}" style="margin-left:auto">${VERDICT[f.v].l}</span></div>
+            <p style="margin-top:3px">${f.found}</p>
+            <p class="dim" style="font-size:11px;margin-top:3px">${f.it.gname}${isMarked(a.id,f.k)?' &middot; you marked this done':''}</p>
+          </div>`).join('')
+        :`<div class="pad"><p class="dim" style="font-size:12.5px">Nothing flagged. Every item the agent could check matches what you ticked.</p></div>`}
+      </div>
+
+      <div class="card">
+        <div class="pad" style="border-bottom:1px solid var(--line);display:flex;align-items:center">
+          <h2>Notes</h2><div class="sp" style="margin-left:auto"></div>
+          <span class="dim" style="font-size:12px">${(NOTES[a.id]||[]).length} note${(NOTES[a.id]||[]).length===1?'':'s'}</span>
+        </div>
+        ${(NOTES[a.id]||[]).length?(NOTES[a.id]).map(nt=>`
+          <div class="note" data-note="${nt.id}">
+            <div class="nhead"><b>${esc(nt.who)}</b><time>${nt.at}</time>
+              <span class="acts"><button class="btn sm ghost" data-edit="${nt.id}" style="padding:2px 7px">Edit</button>
+              <button class="btn sm ghost" data-del="${nt.id}" style="padding:2px 7px;color:var(--crit)">Delete</button></span></div>
+            <p data-ntext="${nt.id}">${esc(nt.text)}</p>
+          </div>`).join('')
+        :`<div class="pad"><p class="dim" style="font-size:12.5px">No notes yet. The latest note shows as this account&rsquo;s blocker on the dashboard.</p></div>`}
+        <div class="note-new">
+          <textarea id="noteInput" rows="2" placeholder="Add a note &mdash; what changed, who you chased, what you&rsquo;re waiting on&hellip;"></textarea>
+          <div class="btn-row" style="margin-top:8px"><button class="btn sm pri" id="noteAdd">${ic('plus')}Add note</button>
+          <span class="dim" style="font-size:11px;align-self:center">Posts as Ryan Malaluan</span></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="pad" style="border-bottom:1px solid var(--line)"><h2>Sheet row</h2></div>
+        <div class="pad">
+          <dl class="kv" style="grid-template-columns:auto 1fr;font-size:12.5px">
+            <dt>Pipeline Stage</dt><dd>${STATUS[acctStage(a.id)].l}</dd>
+            <dt>Owner</dt><dd>${esc(a.city)}</dd>
+            <dt>Percentage</dt><dd class="num">${pctv}% <span class="dim">(computed)</span></dd>
+            <dt>Blockers</dt><dd>${esc(latestNote(a.id))||'<span class="dim">&mdash;</span>'}</dd>
+            <dt>Last Updated</dt><dd>Sep 9, 2026</dd>
+          </dl>
+          <button class="btn sm" style="margin-top:11px" onclick="toast('Row copied for the tracking sheet')">${ic('copy')}Copy sheet row</button>
+        </div>
+      </div>
+    </div>
+  </div></div>`;
+}
+function bindAccount(){
+  const a=ACCOUNTS.find(x=>x.id===S.acct)||ACCOUNTS[0];
+  $$('[data-k]').forEach(b=>b.onclick=()=>toggleMark(a.id,b.dataset.k));
+  $$('[data-gall]').forEach(b=>b.onclick=()=>toggleGroup(a.id,GROUPS.find(g=>g.id===b.dataset.gall)));
+  $$('[data-gopen]').forEach(b=>b.onclick=()=>{
+    const id=b.dataset.gopen; const cur=S.openG[id]!==undefined?S.openG[id]:(GROUPS[0].id===id);
+    S.openG[id]=!cur; render();
+  });
+  const ex=$('#expandAll'); if(ex) ex.onclick=()=>{ const anyClosed=GROUPS.some(g=>!(S.openG[g.id]!==undefined?S.openG[g.id]:(g.id===GROUPS[0].id)));
+    GROUPS.forEach(g=>S.openG[g.id]=anyClosed); render(); };
+  const ra=$('#runAudit'); if(ra) ra.onclick=()=>{ S.view='workspace'; S.run.logs=[]; S.run.ts={}; render(); setTimeout(runStep,400); };
+  const sel=$('#stageSel'); if(sel) sel.onchange=()=>{ if(sel.value===derivedStage(a.id)) delete OVERRIDE[a.id]; else OVERRIDE[a.id]=sel.value; render(); toast('Pipeline stage set to '+STATUS[sel.value].l); };
+  const fnd=openFindings(a.id);
+  $$('[data-find]').forEach(b=>b.onclick=()=>openFinding(fnd[b.dataset.find],a));
+  const add=$('#noteAdd'), inp=$('#noteInput');
+  if(add) add.onclick=()=>{ const v=(inp.value||'').trim(); if(!v){inp.focus();return;}
+    NOTES[a.id].push({id:noteSeq++,at:'Sep 9, 2026',who:'Ryan Malaluan',text:v}); render(); toast('Note added'); };
+  if(inp) inp.addEventListener('keydown',e=>{ if((e.metaKey||e.ctrlKey)&&e.key==='Enter') add.click(); });
+  $$('[data-del]').forEach(b=>b.onclick=()=>{ NOTES[a.id]=NOTES[a.id].filter(n=>n.id!=b.dataset.del); render(); toast('Note deleted'); });
+  $$('[data-edit]').forEach(b=>b.onclick=()=>{
+    const id=b.dataset.edit, note=NOTES[a.id].find(n=>n.id==id), pEl=$(`[data-ntext="${id}"]`);
+    pEl.outerHTML=`<textarea data-etext="${id}">${esc(note.text)}</textarea><div class="btn-row" style="margin-top:7px"><button class="btn sm pri" data-save="${id}">Save</button><button class="btn sm" data-cancel="1">Cancel</button></div>`;
+    const ta=$(`[data-etext="${id}"]`); ta.focus(); ta.setSelectionRange(ta.value.length,ta.value.length);
+    $(`[data-save="${id}"]`).onclick=()=>{ note.text=ta.value.trim()||note.text; render(); toast('Note updated'); };
+    $('[data-cancel]').onclick=()=>render();
+  });
+}
+function openFinding(f,a){
+  const dns = f.it.gid==='dom';
+  const v = VERDICT[f.v];
+  modal(`<div class="modal" role="dialog" aria-modal="true">
+    <div class="modal-head"><div class="mi" style="background:var(--${v.col}-soft);color:var(--${v.col})">${ic(v.g||'alert',17)}</div>
+      <div style="flex:1"><h2>${f.it.n}</h2>
+      <p class="muted" style="font-size:13px;margin-top:3px">${esc(a.name)} &middot; <span class="mono" style="font-size:11.5px">${a.id}</span> &middot; ${f.it.gname}</p></div></div>
+    <div class="modal-body">
+      <dl class="kv" style="grid-template-columns:auto 1fr;font-size:13px">
+        <dt>Verdict</dt><dd><span class="chip ${v.c}"><i class="dot"></i>${v.l}</span></dd>
+        <dt>What the agent found</dt><dd>${f.found}</dd>
+        <dt>Where</dt><dd>${GROUPS.find(g=>g.id===f.it.gid).src}</dd>
+        <dt>You marked it</dt><dd>${isMarked(a.id,f.k)?'<b style="color:var(--crit)">Yes &mdash; this is a disagreement</b>':'Not yet'}</dd>
+        ${f.it.h?`<dt>Why it matters</dt><dd>${f.it.h}</dd>`:''}
+      </dl>
+      ${f.v==='client'?`<div class="alertbox hand" style="margin-top:13px"><h4>${ic('hand',13)} This needs the client</h4>
+        <p>The agent cannot resolve this on its own &mdash; the information or the access has to come from ${esc(a.city)}. Chase it, then re-run the audit.</p></div>`:''}
+      ${isMarked(a.id,f.k)&&f.v!=='client'?`<div class="alertbox crit" style="margin-top:13px"><h4>${ic('alert',13)} Marked done, but not found</h4>
+        <p>You ticked this item, and the agent could not verify it in the subaccount. Either it was saved somewhere else, or it did not save at all.</p></div>`:''}
+      ${dns?`<div class="spec"><div class="sh"><span class="eyebrow">Records that should be present</span></div>
+        <pre>${DNS_RECORDS.map(r=>r[0].padEnd(7)+r[1].padEnd(9)+r[2]).join('\n')}</pre></div>`:''}
+    </div>
+    <div class="modal-foot">
+      <button class="btn" onclick="closeModal()">Close</button>
+      <button class="btn" onclick="toast('Would draft the chase email to the owner')">${ic('ext')}Draft email</button>
+      <div class="sp"></div>
+      <button class="btn pri" id="fRecheck">${ic('redo')}Re-check this item</button>
+    </div></div>`);
+  $('#fRecheck').onclick=()=>{ closeModal(); toast('Re-reading the subaccount&hellip;'); setTimeout(()=>toast('No change — still '+VERDICT[f.v].l.toLowerCase()),1500); };
+}
+</script>
+<script>
+/* ============================================================
+   SUBACCOUNTS LIST  &  SNAPSHOT REGISTRY
+   ============================================================ */
+const FILTERS = [['all','All'],['review','In Review'],['phonep','Phone # Pending'],['dns','Waiting on DNS'],['a2p','A2P Approved'],['done','Complete'],['creation','New']];
+function vAcctList(){
+  const f=S.acctFilter||'all';
+  const rows=ACCOUNTS.filter(a=>f==='all'||acctStage(a.id)===f);
+  return `
+  <div class="sec-head"><h1>Subaccounts</h1><div class="sp"></div>
+    <button class="btn pri" onclick="startWizard()">${ic('plus')}New subaccount</button></div>
+  <div class="card">
+    <div class="pad" style="border-bottom:1px solid var(--line);display:flex;gap:9px;align-items:center;flex-wrap:wrap">
+      <div class="filters">${FILTERS.map(([k,l])=>{
+        const n = k==='all'?ACCOUNTS.length:ACCOUNTS.filter(a=>acctStage(a.id)===k).length;
+        return `<button class="btn sm ${k===f?'on':''}" data-af="${k}">${l}${n?` <span class="num" style="opacity:.65">${n}</span>`:''}</button>`;
+      }).join('')}</div>
+      <div class="sp" style="margin-left:auto"></div>
+      <div class="srch">${ic('srch')}<input id="listSearch" placeholder="Search name, owner or location ID"></div>
+    </div>
+    <div class="scroll-x">
+    <table class="tbl"><thead><tr>
+      <th>Business</th><th>Owner</th><th>Pipeline stage</th><th>Readiness</th>
+      <th>Findings</th><th>Blocked on</th><th class="hide-sm">In stage</th><th class="hide-sm">Latest note</th><th></th>
+    </tr></thead><tbody id="listBody">
+    ${rows.map(a=>{
+      const b=BLOCK[a.block], r=readiness(a.id), fx=openFindings(a.id).length;
+      return `<tr data-acct="${a.id}" data-name="${esc((a.name+' '+a.city+' '+a.id).toLowerCase())}">
+        <td><div class="biz"><div class="sq">${a.init}</div><div><b>${esc(a.name)}</b><small>${a.id}</small></div></div></td>
+        <td class="muted" style="white-space:nowrap">${esc(a.city)}</td>
+        <td>${badge(acctStage(a.id))}</td>
+        <td><div class="prog-cell"><div class="meter ${a.block==='agency'?'crit':r===100?'ok':a.block==='client'?'warn':''}"><i style="width:${r}%"></i></div><span class="num">${r}%</span></div></td>
+        <td>${fx?`<span class="chip c-crit"><i class="dot"></i>${fx}</span>`:'<span class="chip c-ok"><i class="dot"></i>Clear</span>'}</td>
+        <td>${a.block==='none'?'<span class="dim">&mdash;</span>':`<span class="chip ${b.c}"><i class="dot"></i>${b.l}</span>`}</td>
+        <td class="hide-sm num ${stale(a)?'':'dim'}" style="white-space:nowrap;${stale(a)?'color:var(--crit);font-weight:600':''}">${a.days}d</td>
+        <td class="muted hide-sm" style="font-size:12px;max-width:230px">${esc(latestNote(a.id))||'<span class="dim">&mdash;</span>'}</td>
+        <td><div class="rowact"><button class="btn sm">Open${ic('chev',12)}</button></div></td>
+      </tr>`;}).join('')}
+    </tbody></table></div>
+    ${rows.length?'':'<div class="pad"><p class="dim" style="font-size:13px">No subaccounts at this stage.</p></div>'}
+  </div>`;
+}
+function bindAcctList(){
+  $$('[data-af]').forEach(b=>b.onclick=()=>{ S.acctFilter=b.dataset.af; render(); });
+  $$('#listBody tr').forEach(r=>r.onclick=()=>{ S.acct=r.dataset.acct; S.view='account'; render(); window.scrollTo(0,0); });
+  const q=$('#listSearch');
+  if(q) q.oninput=()=>{const v=q.value.toLowerCase();$$('#listBody tr').forEach(r=>r.style.display=r.dataset.name.includes(v)?'':'none');};
+}
+
+const SNAPSHOTS = [
+  {v:'v4.2', name:'FenceOS Master', state:'current', released:'Aug 28, 2026',
+   m:{workflows:42, forms:9, pipelines:6, fields:118},
+   notes:'Adds the Voice AI receptionist template and the six SMS workflows that pause until A2P clears.'},
+  {v:'v4.1', name:'FenceOS Master', state:'previous', released:'Jun 14, 2026',
+   m:{workflows:38, forms:9, pipelines:6, fields:112},
+   notes:'Last version before the Voice AI template. Still supported; upgrade is a re-push, not a merge.'},
+  {v:'v3.9', name:'FenceOS Master', state:'deprecated', released:'Feb 3, 2026',
+   m:{workflows:31, forms:7, pipelines:4, fields:94},
+   notes:'Deprecated. Accounts on this version should be re-pushed to v4.2 before A2P submission.'}
+];
+const ON_SNAPSHOT = {
+  'v4.2':['loc_9Wt1','loc_2Hs6','loc_5Ld3','loc_6Yu2'],
+  'v4.1':['loc_7Kq2','loc_4Bn9','loc_8Vc4'],
+  'v3.9':['loc_1Gp7','loc_3Rt5']
+};
+function vSnapshots(){
+  return `<div style="max-width:1100px">
+  <div class="sec-head"><h1>Snapshots</h1><div class="sp"></div>
+    <span class="dim" style="font-size:12.5px">What each version installs, and who is on it</span></div>
+
+  <div class="alertbox hand" style="margin-bottom:16px">
+    <h4>${ic('hand',13)} Pushing a snapshot is a human step</h4>
+    <p>HighLevel exposes no write endpoint for snapshot deployment. The agent prepares the target, tells you exactly what to push and where, then confirms the push report by email. It never reports a snapshot installed without that confirmation.</p>
+  </div>
+
+  <div class="card" style="margin-bottom:16px">
+    <div class="pad" style="border-bottom:1px solid var(--line)"><h2>Versions</h2></div>
+    ${SNAPSHOTS.map(sn=>{
+      const on = ON_SNAPSHOT[sn.v]||[];
+      return `<div class="snap ${sn.state!=='current'?'old':''}">
+        <span class="sv">${sn.v}</span>
+        <div style="flex:1;min-width:0">
+          <div class="split" style="gap:8px;flex-wrap:wrap">
+            <b style="font-family:var(--disp);font-size:13.5px">${sn.name}</b>
+            <span class="chip ${sn.state==='current'?'c-ok':sn.state==='previous'?'c-idle':'c-warn'}">${sn.state==='current'?'Current':sn.state==='previous'?'Previous':'Deprecated'}</span>
+            <span class="dim" style="font-size:11.5px">released ${sn.released}</span>
+          </div>
+          <p class="muted" style="font-size:12.5px;margin-top:4px;max-width:70ch">${sn.notes}</p>
+          <div class="manifest">
+            <div><b class="num">${sn.m.workflows}</b><span>workflows</span></div>
+            <div><b class="num">${sn.m.forms}</b><span>forms</span></div>
+            <div><b class="num">${sn.m.pipelines}</b><span>pipelines</span></div>
+            <div><b class="num">${sn.m.fields}</b><span>custom fields</span></div>
+            <div><b class="num">${on.length}</b><span>subaccounts</span></div>
+          </div>
+          ${on.length?`<div style="display:flex;gap:5px;flex-wrap:wrap;margin-top:10px">${on.map(id=>{
+            const a=ACCOUNTS.find(x=>x.id===id); return a?`<button class="chip c-idle" data-goacct="${id}" style="cursor:pointer">${esc(a.name)}</button>`:'';
+          }).join('')}</div>`:''}
+        </div>
+      </div>`;}).join('')}
+  </div>
+
+  <div class="card">
+    <div class="pad" style="border-bottom:1px solid var(--line)"><h2>Push status</h2></div>
+    <div class="scroll-x">
+    <table class="tbl" style="min-width:640px"><thead><tr>
+      <th>Business</th><th>Version</th><th>Pushed</th><th>Report</th><th>Action</th>
+    </tr></thead><tbody>
+    ${ACCOUNTS.map(a=>{
+      const v = Object.keys(ON_SNAPSHOT).find(k=>ON_SNAPSHOT[k].includes(a.id))||'—';
+      const stale2 = v==='v3.9';
+      const pushed = readiness(a.id)>10;
+      return `<tr data-acct="${a.id}">
+        <td><div class="biz"><div class="sq">${a.init}</div><div><b>${esc(a.name)}</b><small>${a.id}</small></div></div></td>
+        <td><span class="chip ${stale2?'c-warn':v==='v4.2'?'c-ok':'c-idle'}">${v}</span></td>
+        <td>${pushed?'<span class="chip c-ok"><i class="dot"></i>Installed</span>':'<span class="chip c-idle">Not pushed</span>'}</td>
+        <td class="dim" style="font-size:11.5px">${pushed?'0 failures':'&mdash;'}</td>
+        <td>${stale2?'<button class="btn sm" onclick="toast(\'Would open the handoff card for a v4.2 re-push\')">Re-push to v4.2</button>':'<span class="dim">&mdash;</span>'}</td>
+      </tr>`;}).join('')}
+    </tbody></table></div>
+  </div></div>`;
+}
+function bindSnapshots(){
+  $$('[data-goacct]').forEach(b=>b.onclick=e=>{ e.stopPropagation(); S.acct=b.dataset.goacct; S.view='account'; render(); window.scrollTo(0,0); });
+  $$('tbody tr[data-acct]').forEach(r=>r.onclick=()=>{ S.acct=r.dataset.acct; S.view='account'; render(); window.scrollTo(0,0); });
+}
+</script>
+<script>
+/* ============================================================
+   VIEW · SETTINGS
+   ============================================================ */
+const CONNS = [
+  {id:'ghl', n:'HighLevel', d:'FenceOS agency — reads locations, calendars, users, custom values and phone numbers.',
+   state:'ok', scope:'Read only', detail:'Agency FenceOS · token refreshes 12 Oct 2026', last:'8 min ago'},
+  {id:'gmail', n:'Gmail', d:'Reads snapshot push reports and Business &amp; Branding Form submissions.',
+   state:'ok', scope:'Read only', detail:'tech@integratorssolutions.com', last:'22 min ago'},
+  {id:'drive', n:'Google Drive', d:'Reads the FenceOS Subaccount Onboarding Status Report.',
+   state:'warn', scope:'Read only', detail:'Sheet write access not granted — rows are drafted for you to paste', last:'1 h ago'},
+  {id:'canva', n:'Canva', d:'Reads brand board designs to confirm assets exist at the right dimensions.',
+   state:'ok', scope:'Read only', detail:'Integrators Solutions team', last:'3 h ago'},
+  {id:'site', n:'Website checks', d:'Fetches the client&rsquo;s live site to verify policies, widget and forms.',
+   state:'ok', scope:'Public pages', detail:'No credentials stored', last:'12 min ago'}
+];
+// Loaded from the database via /api/team (see loadTeam()).
+let TEAM = [];
+const PREFS = {cadence:'daily', notifyFinding:true, notifyClient:true, clientDays:7, notifyDigest:true, techDefault:false};
+const SET_TABS=[['connections','Connections'],['checklist','Checklist template'],['schedule','Audit &amp; notifications'],['team','Team']];
+
+function vSettings(){
+  const t=S.setTab;
+  return `<div style="max-width:1000px">
+    <div class="sec-head"><h1>Settings</h1><div class="sp"></div></div>
+    <div class="filters" style="margin-bottom:16px">
+      ${SET_TABS.map(([k,l])=>`<button class="btn sm ${k===t?'on':''}" data-st="${k}">${l}</button>`).join('')}
+    </div>
+    ${({connections:setConns, checklist:setTpl, schedule:setSched, team:setTeam}[t]||setConns)()}
+  </div>`;
+}
+function setConns(){
+  return `
+  <div class="alertbox" style="margin-bottom:16px">
+    <h4>${ic('alert',13)} Nothing here is connected yet</h4>
+    <p>This screen shows what Connections will look like once OAuth is wired up. No tokens are stored, no API calls are made, and the statuses below are placeholder data. Re-check does nothing but show a message.</p>
+  </div>
+  <div class="card">
+    <div class="pad" style="border-bottom:1px solid var(--line)">
+      <h2>Connections</h2>
+      <p class="muted" style="font-size:12.5px;margin-top:4px;max-width:70ch">The design intent: the agent only ever reads. No write scope on any of these, which is why it can report a problem but never silently change a client&rsquo;s account.</p>
+    </div>
+    ${CONNS.map(c=>`<div class="item" style="padding:14px 15px;align-items:flex-start">
+      <span style="flex:none;margin-top:2px;color:var(--ink-3)">${ic('layers',15)}</span>
+      <div class="ibody">
+        <b style="font-size:13.5px;font-family:var(--disp);font-weight:600">${c.n}</b>
+        <span class="ihint" style="color:var(--ink-2);margin-top:2px">${c.d}</span>
+        <span class="ihint mono" style="margin-top:4px">${c.detail}</span>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:5px;align-items:flex-end;flex:none">
+        <span class="chip c-idle">Not connected</span>
+        <span class="dim" style="font-size:11px">Would be: ${c.scope} &middot; ${c.state==='ok'?'connected':'limited'}</span>
+        <button class="btn sm" data-recon="${c.id}">Connect</button>
+      </div>
+    </div>`).join('')}
+  </div>`;
+}
+function setTpl(){
+  const g = S.tplG ? GROUPS.find(x=>x.id===S.tplG) : null;
+  if(g) return `<div class="card">
+    <div class="pad" style="border-bottom:1px solid var(--line);display:flex;align-items:center;gap:10px">
+      <button class="btn sm" id="tplBack">&larr; All groups</button>
+      <div><h2>${g.n}</h2><span class="gsrc">${g.src}</span></div>
+      <div class="sp" style="margin-left:auto"></div>
+      <span class="dim" style="font-size:12px">${g.items.length} items</span>
+    </div>
+    ${g.items.map((it,i)=>`<div class="item">
+      <span style="flex:none;width:18px;text-align:center;color:var(--ink-3)" class="mono">${i+1}</span>
+      <div class="ibody"><b>${it.n}</b>${it.h?`<span class="ihint">${it.h}</span>`:''}</div>
+      <button class="chip ${it.m?'c-idle':'c-run'}" data-mflag="${g.id}:${it.id}" style="cursor:pointer;flex:none;align-self:center" title="Switch between agent-verified and manual">${it.m?'Manual check':'Agent verifies'}</button>
+      <button class="btn sm ghost" data-idel="${g.id}:${it.id}" style="flex:none;align-self:center;color:var(--crit);padding:2px 7px">Remove</button>
+    </div>`).join('')}
+    <div class="note-new">
+      <div class="fields" style="grid-template-columns:2fr 2fr auto;gap:8px;align-items:end">
+        <div class="f"><label for="tplName">New item</label><input id="tplName" placeholder="e.g. Missed Call Text Back enabled"></div>
+        <div class="f"><label for="tplHint">Hint <span class="opt">optional</span></label><input id="tplHint" placeholder="Why it matters, or where to look"></div>
+        <button class="btn pri" id="tplAdd">${ic('plus')}Add</button>
+      </div>
+      <p class="dim" style="font-size:11px;margin-top:8px">Added items appear on every subaccount&rsquo;s checklist immediately and count toward readiness.</p>
+    </div>
+  </div>`;
+  return `<div class="card">
+    <div class="pad" style="border-bottom:1px solid var(--line)">
+      <h2>Checklist template</h2>
+      <p class="muted" style="font-size:12.5px;margin-top:4px;max-width:70ch">One template drives every subaccount. Editing it here changes what the agent checks and what appears on all ${ACCOUNTS.length} checklists &mdash; ${TOTAL_ITEMS} items across ${GROUPS.length} groups today.</p>
+    </div>
+    ${GROUPS.map((gg,i)=>`<button class="check" data-tplg="${gg.id}" style="width:100%">
+      <span class="ci" style="background:var(--accent-soft);color:var(--accent);border:1px solid var(--accent-line)"><span class="mono" style="font-size:9px;color:var(--accent)">${i+1}</span></span>
+      <span style="flex:1;min-width:0"><b>${gg.n}</b><span class="sub mono">${gg.src}</span></span>
+      <span class="num dim" style="font-size:12px;margin-right:8px">${gg.items.length} items</span>
+      <span class="chip c-idle" style="margin-right:8px">${gg.items.filter(x=>x.m).length} manual</span>
+      <span class="caret">${ic('chev',14)}</span></button>`).join('')}
+  </div>`;
+}
+function setSched(){
+  const row=(k,label,desc,on)=>`<div class="item" style="padding:13px 15px">
+    <div class="ibody"><b>${label}</b><span class="ihint">${desc}</span></div>
+    <button class="sw ${on?'on':''}" data-pref="${k}" role="switch" aria-checked="${on}" aria-label="${label}" style="flex:none;align-self:center"></button></div>`;
+  return `<div style="display:flex;flex-direction:column;gap:14px">
+    <div class="card">
+      <div class="pad" style="border-bottom:1px solid var(--line)"><h2>Audit schedule</h2>
+        <p class="muted" style="font-size:12.5px;margin-top:4px">How often the agent re-reads every subaccount without being asked.</p></div>
+      <div class="pad">
+        <div class="filters">${[['ondemand','On demand only'],['daily','Every morning'],['weekly','Weekly'],['change','On any change']].map(([k,l])=>
+          `<button class="btn sm ${PREFS.cadence===k?'on':''}" data-cad="${k}">${l}</button>`).join('')}</div>
+        <p class="dim" style="font-size:11.5px;margin-top:10px">A daily pass at 6:00 AM Asia/Manila catches things that drift &mdash; a calendar switched off, a custom value cleared, a policy page taken down.</p>
+      </div>
+    </div>
+    <div class="card">
+      <div class="pad" style="border-bottom:1px solid var(--line)"><h2>Notifications</h2></div>
+      ${row('notifyFinding','New finding','Tell me as soon as an audit flags something that was previously clear.',PREFS.notifyFinding)}
+      ${row('notifyClient','Client blocked too long',`Chase reminder when an item has waited on the client for more than ${PREFS.clientDays} days.`,PREFS.notifyClient)}
+      ${row('notifyDigest','Morning digest','One summary of every open finding across all subaccounts.',PREFS.notifyDigest)}
+      ${row('techDefault','Show technical detail by default','Open activity logs with the raw payloads already expanded.',PREFS.techDefault)}
+    </div>
+  </div>`;
+}
+function setTeam(){
+  const owners=TEAM.filter(m=>m.role==='Owner').length;
+  return `<div class="card">
+    <div class="pad" style="border-bottom:1px solid var(--line);display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+      <div><h2>Team</h2><p class="muted" style="font-size:12.5px;margin-top:4px">Who can see the console and who findings route to.</p></div>
+      <div class="sp" style="margin-left:auto"></div>
+      <span class="dim" style="font-size:12px">${TEAM.length} member${TEAM.length===1?'':'s'}</span>
+      <button class="btn sm pri" id="tmInvite">${ic('plus')}Add member</button>
+    </div>
+    ${S.inviting?`<div class="note-new" style="border-top:0;border-bottom:1px solid var(--line);border-radius:0">
+      <div class="fields" style="grid-template-columns:1fr 1fr 1fr auto;gap:8px;align-items:end">
+        <div class="f"><label for="tmName">Name</label><input id="tmName" placeholder="Full name"></div>
+        <div class="f"><label for="tmRole">Job title</label><input id="tmRole" placeholder="Communication Specialist"></div>
+        <div class="f"><label for="tmEmail">Email</label><input id="tmEmail" type="email" placeholder="name@integratorssolutions.com"></div>
+        <div style="display:flex;gap:6px"><button class="btn pri" id="tmSave">Add</button><button class="btn" id="tmCancel">Cancel</button></div>
+      </div></div>`:''}
+    ${TEAM.map((m,i)=>{
+      const isYou = m.n==='Ryan Malaluan';
+      const lastOwner = m.role==='Owner' && owners===1;
+      return `<div class="item" style="padding:14px 15px">
+      <div class="av" style="flex:none">${m.init}</div>
+      <div class="ibody"><b style="font-size:13.5px">${m.n}${isYou?' <span class="dim" style="font-weight:400;font-size:11.5px">(you)</span>':''}</b>
+        <span class="ihint">${m.r} &middot; ${m.e}</span>
+        <span class="ihint" style="color:var(--ink-2);margin-top:3px">Owns: ${m.owns}</span></div>
+      <div style="display:flex;gap:7px;align-items:center;flex:none">
+        <span class="chip ${m.role==='Owner'?'c-run':'c-idle'}">${m.role}</span>
+        <button class="btn sm" data-tmdel="${m.id}" ${lastOwner?'disabled title="The last owner cannot be removed"':''} style="color:var(--crit);border-color:var(--crit-line)">Remove</button>
+      </div>
+    </div>`;}).join('')}
+  </div>`;
+}
+async function loadTeam(){
+  try{
+    const res=await fetch('/api/team');
+    if(!res.ok) return;
+    const rows=await res.json();
+    TEAM = rows.map(m=>({id:m.id, n:m.name, r:m.title, e:m.email, role:m.role, init:m.initials, owns:m.owns}));
+    if(S.view==='settings') render();
+  }catch(e){ /* offline — keep whatever is loaded */ }
+}
+async function removeMember(id, m){
+  try{
+    const res=await fetch('/api/team/'+id,{method:'DELETE'});
+    if(!res.ok){ const j=await res.json().catch(()=>({})); toast(j.error||'Could not remove member','bad'); return; }
+    TEAM = TEAM.filter(x=>x.id!==id);
+    render(); toast(m.n+' removed from the team');
+  }catch(e){ toast('Network error — member not removed','bad'); }
+}
+function confirmRemove(id){
+  const m=TEAM.find(x=>x.id===id);
+  if(!m) return;
+  modal(`<div class="modal" role="dialog" aria-modal="true" style="width:min(440px,100%)">
+    <div class="modal-head"><div class="mi" style="background:var(--crit-soft);color:var(--crit)">${ic('alert',17)}</div>
+      <div style="flex:1"><h2>Remove ${esc(m.n)}?</h2>
+      <p class="muted" style="font-size:13px;margin-top:3px">${esc(m.r)} &middot; ${esc(m.e)}</p></div></div>
+    <div class="modal-body">
+      <p class="muted" style="font-size:13px">They lose access to the console immediately. Notes and audit entries they wrote stay on the record &mdash; the history is not rewritten.</p>
+      ${m.owns?`<div class="alertbox" style="margin-top:12px"><h4>${ic('hand',13)} Reassign their work</h4>
+        <p>${esc(m.n)} currently owns <b>${esc(m.owns)}</b>. Findings routed to them will go unassigned until someone else picks them up.</p></div>`:''}
+    </div>
+    <div class="modal-foot"><button class="btn" onclick="closeModal()">Cancel</button><div class="sp"></div>
+      <button class="btn danger" id="tmYes">${ic('x')}Remove ${esc(m.n.split(' ')[0])}</button></div></div>`);
+  $('#tmYes').onclick=()=>{ closeModal(); removeMember(id, m); };
+}
+function bindSettings(){
+  $$('[data-st]').forEach(b=>b.onclick=()=>{ S.setTab=b.dataset.st; S.tplG=null; render(); });
+  $$('[data-recon]').forEach(b=>b.onclick=()=>toast('Not wired up yet — this is where the OAuth flow would start','bad'));
+  $$('[data-tplg]').forEach(b=>b.onclick=()=>{ S.tplG=b.dataset.tplg; render(); window.scrollTo(0,0); });
+  const back=$('#tplBack'); if(back) back.onclick=()=>{ S.tplG=null; render(); };
+  $$('[data-mflag]').forEach(b=>b.onclick=()=>{
+    const [gid,iid]=b.dataset.mflag.split(':');
+    const it=GROUPS.find(g=>g.id===gid).items.find(x=>x.id===iid);
+    it.m = it.m?0:1; reindex(); render();
+    toast(it.m?'Now a manual check':'The agent will verify this');
+  });
+  $$('[data-idel]').forEach(b=>b.onclick=()=>{
+    const [gid,iid]=b.dataset.idel.split(':');
+    const g=GROUPS.find(x=>x.id===gid);
+    g.items=g.items.filter(x=>x.id!==iid);
+    ACCOUNTS.forEach(a=>MARKS[a.id].delete(key(gid,iid)));
+    reindex(); render(); toast('Item removed from the template');
+  });
+  const add=$('#tplAdd');
+  if(add) add.onclick=()=>{
+    const nm=$('#tplName'), ht=$('#tplHint');
+    const v=(nm.value||'').trim(); if(!v){ nm.focus(); return; }
+    const g=GROUPS.find(x=>x.id===S.tplG);
+    const id='x'+Math.random().toString(36).slice(2,6);
+    g.items.push({id, n:v, h:(ht.value||'').trim()||undefined});
+    reindex(); render(); toast('Added to '+g.n);
+  };
+  const inv=$('#tmInvite'); if(inv) inv.onclick=()=>{ S.inviting=true; render(); setTimeout(()=>{const e=$('#tmName'); if(e)e.focus();},60); };
+  const cx=$('#tmCancel'); if(cx) cx.onclick=()=>{ S.inviting=false; render(); };
+  const sv=$('#tmSave');
+  if(sv) sv.onclick=async ()=>{
+    const n=($('#tmName').value||'').trim(), r=($('#tmRole').value||'').trim(), e=($('#tmEmail').value||'').trim();
+    if(!n){ $('#tmName').focus(); return; }
+    if(!/^[^@\s]+@[^@\s]+\.[a-z]{2,}$/i.test(e)){ toast('Enter a valid email address','bad'); $('#tmEmail').focus(); return; }
+    try{
+      const res=await fetch('/api/team',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:n,title:r,email:e})});
+      const j=await res.json().catch(()=>({}));
+      if(!res.ok){ toast(j.error||'Could not add member','bad'); return; }
+      TEAM.push({id:j.id, n:j.name, r:j.title, e:j.email, role:j.role, init:j.initials, owns:j.owns});
+      S.inviting=false; render(); toast(n+' added to the team');
+    }catch(err){ toast('Network error — member not added','bad'); }
+  };
+  $$('[data-tmdel]').forEach(b=>b.onclick=()=>confirmRemove(Number(b.dataset.tmdel)));
+  $$('[data-cad]').forEach(b=>b.onclick=()=>{ PREFS.cadence=b.dataset.cad; render(); toast('Audit schedule updated'); });
+  $$('[data-pref]').forEach(b=>b.onclick=()=>{ PREFS[b.dataset.pref]=!PREFS[b.dataset.pref]; render(); });
+}
+</script>
+<script>
+/* ============================================================
+   AI CHAT — operational register, always with a next action
+   ============================================================ */
+const ACT = (label,fn,pri)=>`<button class="btn sm ${pri?'pri':''}" data-act="${fn}">${label}</button>`;
+const SCRIPT = [
+ {re:/(what|whats).*(doing|working|status)|current task/i, a:()=>{
+    const t=TASKS[S.run.cur];
+    if(S.run.state==='idle') return {m:`<p>Nothing is running. The plan is approved and ready — 15 tasks, 11 of them fully automatic.</p>`,acts:[]};
+    if(S.run.state==='failed') return {m:`<p>I'm stopped on <b>${t.n}</b>. The subaccount has no phone number, so there's nothing to attach the IVR to. Everything before it completed.</p>`,acts:[ACT('Assign number','num',1),ACT('Retry','retry')]};
+    return {m:`<p>Working on <b>${t.n}</b> — ${t.d.charAt(0).toLowerCase()+t.d.slice(1)}</p><p>${doneCount()} of ${TASKS.length} tasks done, ${pct()}% through the run.</p>`,acts:[]};
+ }},
+ {re:/why.*(ivr|phone).*(fail|not|error)|ivr setup fail/i, a:()=>({
+    m:`<p>The IVR could not be completed because the subaccount does not currently have an available phone number. I can retry after a number is assigned.</p><p class="dim" style="font-size:12px"><span class="mono">ERR_NO_NUMBER_ASSIGNED</span> · 14 numbers available in area code 812</p>`,
+    acts:[ACT('Assign number','num',1),ACT('Retry setup','retry')]})},
+ {re:/(fix|repair|resolve).*(this|it|issue|problem)|can you fix/i, a:()=>({
+    m:`<p>Two things are open. One I can fix, one I can't:</p><ul><li><b>Phone &amp; IVR</b> — I need you to authorize a number, then I'll build the routing menu and attach the receptionist on my own.</li><li><b>6 paused workflows</b> — nothing is wrong with them. They're waiting on carrier approval of the A2P campaign, which is outside this system.</li></ul>`,
+    acts:[ACT('Assign number & fix','num',1)]})},
+ {re:/(what|whats).*(left|remaining|still)|still needs?/i, a:()=>({
+    m:`<p>Three things:</p><ul><li>A phone number, so the IVR and the receptionist can go live — needs your authorization</li><li>A2P campaign <span class="mono">cmp_7T4</span> clearing carrier review — 1–3 business days, external</li><li>Six SMS workflows resume automatically when that clears</li></ul><p>Everything else is configured and verified.</p>`,
+    acts:[ACT('Open verification','verify',1)]})},
+ {re:/(show|what).*(changed|you did|changes)/i, a:()=>({
+    m:`<p>In this subaccount I created 1 location, 1 pipeline with 6 stages, 9 custom fields, 24 custom values, 2 forms, 3 brand assets, 1 Voice AI agent and activated 18 workflows.</p><p>I did not push the snapshot or activate the calendars — you did those, and I verified them afterward. Every write is in the audit log with its payload.</p>`,
+    acts:[ACT('Open audit log','audit',1)]})},
+ {re:/(restart|retry).*(fail|task)|retry/i, a:()=>({
+    m:`<p>Retrying <b>${(TASKS[S.run.cur]||{}).n}</b> now. If no number has been assigned it will fail the same way — the check is the first thing it does.</p>`,acts:[ACT('Assign number first','num',1),ACT('Retry anyway','retry')]})},
+ {re:/skip/i, a:()=>({
+    m:`<p>I can skip it. Be aware of what that leaves: the Voice AI receptionist has no number to answer on, missed-call text back never fires, and the booking confirmation calls go nowhere. The subaccount will verify at ${score()}% instead of 98%.</p>`,
+    acts:[ACT('Skip anyway','skip'),ACT('Assign number instead','num',1)]})},
+ {re:/explain.*(phone|ivr)|phone setup/i, a:()=>({
+    m:`<p>Three pieces. A local number gets provisioned on the subaccount. A routing menu decides where each call goes — new estimates to the AI receptionist, existing jobs to Dale, billing to voicemail-to-text, zero to a person. Outside business hours everything goes to the receptionist and then voicemail.</p><p>Nothing routes until the number exists, which is where this run stopped.</p>`,
+    acts:[ACT('Assign number','num',1)]})},
+ {re:/approval|why.*approve/i, a:()=>({
+    m:`<p>Two of the fifteen tasks change things I shouldn't decide alone.</p><ul><li><b>A2P registration</b> submits the business's legal name, EIN and sample messages to the carriers. A rejection costs days and a re-registration fee.</li><li><b>Phone provisioning</b> bills the agency and changes how calls to this business are answered.</li></ul><p>Two more tasks — the snapshot push and calendar activation — have no API at all, so those come to you as instructions rather than approvals.</p>`,acts:[]})},
+ {re:/carrier|a2p|10dlc|submitted/i, a:()=>({
+    m:`<p>The brand carries the legal name, EIN from the CP-575, address and website. The campaign declares a Mixed use case with two sample messages, both carrying opt-out language.</p><p>Status is <span class="mono">PENDING_CARRIER</span>. I check it every few hours and will resume the six paused SMS workflows the moment it flips to approved.</p>`,acts:[]})},
+ {re:/snapshot/i, a:()=>({
+    m:`<p>FenceOS Master v4.2 — 42 workflows, 9 forms, 6 pipelines and 118 custom fields. The push report came back with 0 failures.</p><p>I can't push snapshots myself; that screen has no API. You pushed it and I verified the report.</p>`,acts:[]})}
+];
+function ask(q){ pushMsg('u',esc(q)); setTimeout(()=>reply(q),380); }
+function reply(q){
+  const hit = SCRIPT.find(s=>s.re.test(q));
+  const r = hit? hit.a() : {m:`<p>I can answer about this run's tasks, why something failed, what's left, what I changed, or the phone, A2P and snapshot steps specifically.</p>`,acts:[ACT('What is still needed?','q:What still needs to be configured?',1)]};
+  pushMsg('a', r.m + (r.acts&&r.acts.length?`<div class="msg-act">${r.acts.join('')}</div>`:''));
+}
+function pushMsg(who,html){
+  S.msgs.push({who,html});
+  const el=$('#msgs');
+  el.insertAdjacentHTML('beforeend',`<div class="msg ${who}"><div class="mi">${who==='a'?ic('bot',13):'RM'}</div><div class="mb">${html}</div></div>`);
+  el.scrollTop=el.scrollHeight;
+  bindMsgActs();
+}
+function bindMsgActs(){
+  $$('[data-act]').forEach(b=>b.onclick=()=>{
+    const a=b.dataset.act;
+    if(a==='num'){ closeChat(); if(S.view!=='workspace'){go('workspace');} assignNumber(); }
+    else if(a==='retry'){ closeChat(); if(S.view!=='workspace'){go('workspace');} retry(); }
+    else if(a==='verify'){ closeChat(); go('verify'); }
+    else if(a==='audit'){ closeChat(); go('audit'); }
+    else if(a==='skip'){ closeChat(); go('workspace'); const t=TASKS[S.run.cur]; S.run.ts[t.id]='skip'; S.run.cur++; S.run.state='running'; repaintWork(); wait(400); }
+    else if(a.startsWith('q:')){ ask(a.slice(2)); }
+  });
+}
+const CHIPS=['What is the AI doing?','Why did the IVR setup fail?','What still needs to be configured?','Show me what you changed.'];
+function openChat(){ S.chatOpen=true; $('#chat').classList.add('open'); $('#chatCtx').textContent=chatCtx();
+  if(!S.msgs.length){ pushMsg('a',`<p>I'm the setup agent for <b>${esc(S.form.bname)}</b>. Ask me what I'm doing, why something failed, or what's left — I'll answer with the actual state, not a summary.</p>`); }
+  setTimeout(()=>$('#chatInput').focus(),240); }
+function closeChat(){ S.chatOpen=false; $('#chat').classList.remove('open'); }
+function nudgeChat(t){
+  if(!S.chatOpen) return;
+  pushMsg('a',`<p><b>${t.n}</b> failed. The subaccount has no phone number assigned, so the routing menu has nothing to attach to.</p><div class="msg-act">${ACT('Assign number','num',1)}${ACT('Retry setup','retry')}</div>`);
+}
+
+/* ============================================================
+   INIT
+   ============================================================ */
+$('#chips').innerHTML = CHIPS.map(c=>`<button data-chip="${esc(c)}">${esc(c)}</button>`).join('');
+$$('[data-chip]').forEach(b=>b.onclick=()=>ask(b.dataset.chip));
+$('#chatBtn').onclick=()=>S.chatOpen?closeChat():openChat();
+$('#fab').onclick=()=>S.chatOpen?closeChat():openChat();
+$('#chatClose').onclick=closeChat;
+$('#chatSend').onclick=()=>{ const i=$('#chatInput'); if(!i.value.trim())return; ask(i.value.trim()); i.value=''; i.style.height='auto'; };
+$('#chatInput').addEventListener('keydown',e=>{ if(e.key==='Enter'&&!e.shiftKey){ e.preventDefault(); $('#chatSend').click(); } });
+$('#chatInput').addEventListener('input',e=>{ e.target.style.height='auto'; e.target.style.height=Math.min(e.target.scrollHeight,96)+'px'; });
+$('#themeBtn').onclick=()=>{ const t=getTheme(); setTheme(t==='system'?'dark':t==='dark'?'light':'system'); };
+$('#menuBtn').onclick=()=>$('#rail').classList.toggle('open');
+document.addEventListener('click',e=>{
+  if(e.target.dataset&&e.target.dataset.scrim!==undefined) closeModal();
+  if(window.innerWidth<=760 && !e.target.closest('#rail') && !e.target.closest('#menuBtn')) $('#rail').classList.remove('open');
+});
+document.addEventListener('keydown',e=>{ if(e.key==='Escape'){ closeModal(); if(S.chatOpen) closeChat(); } });
+document.body.addEventListener('click',e=>{ const b=e.target.closest('#techBtn'); if(b) toggleTech(); });
+matchMedia('(prefers-color-scheme:dark)').addEventListener('change',paintThemeBtn);
+setTheme(getTheme());
+render();
+loadTeam();
+</script>
+
+</body>
+</html>
