@@ -46,7 +46,18 @@ function hashPassword(pw) {
   return `scrypt$${salt.toString('hex')}$${dk.toString('hex')}`
 }
 
-const pool = new Pool({ connectionString: url })
+function sslFor(cs) {
+  try {
+    const h = new URL(cs).hostname
+    if (h === 'localhost' || h === '127.0.0.1' || h === '::1') return undefined
+    if (/sslmode=disable/i.test(cs)) return undefined
+    return { rejectUnauthorized: false }
+  } catch {
+    return undefined
+  }
+}
+
+const pool = new Pool({ connectionString: url, ssl: sslFor(url) })
 try {
   for (const f of sqlFiles('db/migrations')) {
     console.log('[migrate] apply', f)
