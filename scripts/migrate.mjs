@@ -15,6 +15,13 @@ import { scryptSync, randomBytes } from 'node:crypto'
 const root = join(dirname(fileURLToPath(import.meta.url)), '..')
 const url = process.env.DATABASE_URL
 if (!url) {
+  // During a build (e.g. Vercel) without a database configured, skip gracefully
+  // so the build still succeeds. Elsewhere, a missing URL is an error.
+  const optional = process.env.VERCEL === '1' || process.env.MIGRATE_OPTIONAL === '1'
+  if (optional) {
+    console.log('[migrate] DATABASE_URL not set — skipping migrations (build will continue)')
+    process.exit(0)
+  }
   console.error('[migrate] DATABASE_URL is required')
   process.exit(1)
 }
