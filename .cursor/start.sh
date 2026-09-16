@@ -48,14 +48,11 @@ SQL
     ;;
 esac
 
-# --- Apply migrations (idempotent) + seed admin --------------------------
-echo "[start] Applying migrations..."
-for f in db/migrations/*.sql; do
-  echo "[start]   -> $f"
-  psql "$APPLY_URL" -v ON_ERROR_STOP=1 -f "$f"
-done
-
-echo "[start] Seeding initial admin..."
-DATABASE_URL="$APPLY_URL" node scripts/seed-admin.mjs
+# --- Apply migrations + (dev-only) seeds via the portable runner ---------
+# migrate.mjs applies schema to any target, but only loads demo data / a
+# default admin for a local DB unless SEED_DEMO=1 / SEED_ADMIN_PASSWORD are set,
+# so a remote database (e.g. Supabase) is never populated with sample data.
+echo "[start] Running migrations..."
+DATABASE_URL="$APPLY_URL" node scripts/migrate.mjs
 
 echo "[start] Database ready (host: ${HOST:-localhost})."
