@@ -5,8 +5,8 @@
   "terminals": [
     {
       "name": "next-dev",
-      "command": "DATABASE_URL=postgresql://fenceos:fenceos@localhost:5432/fenceos pnpm dev",
-      "description": "Next.js dev server for the FenceOS console (http://localhost:3000)."
+      "command": ": \"${DATABASE_URL:=postgresql://fenceos:fenceos@localhost:5432/fenceos}\"; export DATABASE_URL; pnpm dev",
+      "description": "Next.js dev server. Uses an injected DATABASE_URL (e.g. Supabase) when present, else falls back to the local PostgreSQL."
     }
   ],
   "ports": [
