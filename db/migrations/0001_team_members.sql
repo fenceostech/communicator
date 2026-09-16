@@ -1,6 +1,4 @@
--- FenceOS console schema + seed data.
--- Idempotent: safe to run on every environment boot.
-
+-- Team directory. Idempotent: safe to run on every boot.
 CREATE TABLE IF NOT EXISTS team_members (
   id         SERIAL PRIMARY KEY,
   name       TEXT NOT NULL,
@@ -12,8 +10,6 @@ CREATE TABLE IF NOT EXISTS team_members (
   created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
--- Seed the founding team. ON CONFLICT keeps re-runs idempotent without
--- clobbering rows an operator may have edited.
 INSERT INTO team_members (name, title, email, role, initials, owns, created_at) VALUES
   ('Ryan Malaluan', 'Founder',                 'ryan@fenceos.io',    'Owner',      'RM', 'Agency configuration', now() - interval '90 days'),
   ('Dale Whitaker', 'Estimator',               'dale@abcfence.com',  'Owner',      'DW', 'Subaccount builds',     now() - interval '60 days'),

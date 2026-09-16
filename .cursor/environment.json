@@ -5,8 +5,8 @@
   "terminals": [
     {
       "name": "next-dev",
-      "command": ": \"${DATABASE_URL:=postgresql://fenceos:fenceos@localhost:5432/fenceos}\"; export DATABASE_URL; pnpm dev",
-      "description": "Next.js dev server. Uses an injected DATABASE_URL (e.g. Supabase) when present, else falls back to the local PostgreSQL."
+      "command": ": \"${DATABASE_URL:=postgresql://fenceos:fenceos@localhost:5432/fenceos}\"; : \"${SESSION_SECRET:=dev-only-insecure-secret-change-me}\"; export DATABASE_URL SESSION_SECRET; pnpm dev",
+      "description": "Next.js dev server. Uses an injected DATABASE_URL (e.g. Supabase) and SESSION_SECRET when present, else local dev defaults."
     }
   ],
   "ports": [

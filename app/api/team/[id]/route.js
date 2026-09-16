@@ -1,9 +1,13 @@
 import { pool } from '@/lib/db'
+import { requireRole } from '@/lib/auth'
 
 export const dynamic = 'force-dynamic'
 
-// DELETE /api/team/:id — remove a member (never the last owner).
+// DELETE /api/team/:id — remove a member (admin only, never the last owner).
 export async function DELETE(_request, { params }) {
+  const { error } = await requireRole(['admin'])
+  if (error) return error
+
   const { id } = await params
   const memberId = Number(id)
   if (!Number.isInteger(memberId)) {

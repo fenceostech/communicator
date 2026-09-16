@@ -48,8 +48,14 @@ SQL
     ;;
 esac
 
-# --- Apply schema + seed (idempotent) ------------------------------------
-echo "[start] Applying schema + seed..."
-psql "$APPLY_URL" -v ON_ERROR_STOP=1 -f .cursor/db/schema.sql
+# --- Apply migrations (idempotent) + seed admin --------------------------
+echo "[start] Applying migrations..."
+for f in db/migrations/*.sql; do
+  echo "[start]   -> $f"
+  psql "$APPLY_URL" -v ON_ERROR_STOP=1 -f "$f"
+done
+
+echo "[start] Seeding initial admin..."
+DATABASE_URL="$APPLY_URL" node scripts/seed-admin.mjs
 
 echo "[start] Database ready (host: ${HOST:-localhost})."
