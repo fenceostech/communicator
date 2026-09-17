@@ -21,7 +21,7 @@ img{max-width:100%}
   --bg:#F4F6F6; --sunken:#EAEEEE; --panel:#FFFFFF; --panel-2:#F8FAFA;
   --line:#DCE3E3; --line-2:#C0CBCB;
   --ink:#101617; --ink-2:#4A5658; --ink-3:#78888A;
-  --accent:#0F6F77; --accent-hov:#0B565C; --accent-ink:#FFFFFF; --accent-soft:#E1EFF0; --accent-line:#96C4C6;
+  --accent:#0284C7; --accent-hov:#0369A1; --accent-ink:#FFFFFF; --accent-soft:#E0F2FE; --accent-line:#7DD3FC;
   --ok:#256D4A; --ok-soft:#E1EFE7; --ok-line:#98C6AE;
   --warn:#95590A; --warn-soft:#FAEEDA; --warn-line:#DEBA83;
   --crit:#A02B21; --crit-soft:#FAE6E3; --crit-line:#E3A69E;
@@ -41,7 +41,7 @@ img{max-width:100%}
   --bg:#0C1112; --sunken:#070B0C; --panel:#131A1B; --panel-2:#182122;
   --line:#26302F; --line-2:#384645;
   --ink:#E7EDED; --ink-2:#A3B1B2; --ink-3:#718183;
-  --accent:#3EB2B6; --accent-hov:#63C8CB; --accent-ink:#04191B; --accent-soft:#123130; --accent-line:#275453;
+  --accent:#38BDF8; --accent-hov:#7DD3FC; --accent-ink:#04222E; --accent-soft:#0B2C3F; --accent-line:#1E4E68;
   --ok:#54B583; --ok-soft:#102A20; --ok-line:#22543C;
   --warn:#D79A45; --warn-soft:#2C2011; --warn-line:#573F1C;
   --crit:#E08076; --crit-soft:#2D1614; --crit-line:#5B2A25;
@@ -56,7 +56,7 @@ img{max-width:100%}
   --bg:#0C1112; --sunken:#070B0C; --panel:#131A1B; --panel-2:#182122;
   --line:#26302F; --line-2:#384645;
   --ink:#E7EDED; --ink-2:#A3B1B2; --ink-3:#718183;
-  --accent:#3EB2B6; --accent-hov:#63C8CB; --accent-ink:#04191B; --accent-soft:#123130; --accent-line:#275453;
+  --accent:#38BDF8; --accent-hov:#7DD3FC; --accent-ink:#04222E; --accent-soft:#0B2C3F; --accent-line:#1E4E68;
   --ok:#54B583; --ok-soft:#102A20; --ok-line:#22543C;
   --warn:#D79A45; --warn-soft:#2C2011; --warn-line:#573F1C;
   --crit:#E08076; --crit-soft:#2D1614; --crit-line:#5B2A25;
@@ -1108,7 +1108,7 @@ function rowFor(a){
     <td>${badge(acctStage(a.id))}${OVERRIDE[a.id]?'<span class="dim" style="font-size:10px;margin-left:5px">manual</span>':''}</td>
     <td><div class="prog-cell"><div class="meter ${meterCls}"><i style="width:${readiness(a.id)}%"></i></div><span class="num">${readiness(a.id)}%</span></div></td>
     <td>${a.block==='none'?'<span class="dim">&mdash;</span>':`<span class="chip ${b.c}"><i class="dot"></i>${b.l}</span>`}</td>
-    <td class="muted hide-sm" style="font-size:12px;max-width:260px">${esc(latestNote(a.id))||'<span class="dim">&mdash;</span>'}</td>
+    <td class="hide-sm" style="font-size:12px;max-width:260px">${blockerChips(a.id)}</td>
     <td><div class="rowact"><button class="btn sm">Open${ic('chev',12)}</button></div></td>
   </tr>`;
 }
@@ -2035,6 +2035,35 @@ const findingsOf = aid=>Object.keys(FIND[aid]).map(k=>({k, v:FIND[aid][k][0], fo
 const openFindings = aid=>findingsOf(aid).filter(f=>!isMarked(aid,f.k));
 const clientBlocked = aid=>openFindings(aid).filter(f=>f.v==='client');
 
+/* ---------- dynamic blockers, driven by the real checklist ----------
+   A blocker only shows when its specific checklist item is not completed.
+   DNS   -> key('dom','dver')   "All DNS records verified correct"
+   Phone -> key('phone','pbuy') "Phone number purchased"
+   A2P (group 'a2p') is intentionally NOT part of the phone-number blocker. */
+const DNS_ITEM = key('dom','dver');
+const PHONE_ITEM = key('phone','pbuy');
+const dnsDone   = aid => isMarked(aid, DNS_ITEM);
+const phoneDone = aid => isMarked(aid, PHONE_ITEM);
+function blockersFor(aid){
+  const list=[];
+  if(!dnsDone(aid))   list.push({type:'dns',   title:'DNS BLOCKER',          msg:'DNS records have not been added or verified yet.'});
+  if(!phoneDone(aid)) list.push({type:'phone', title:'PHONE NUMBER BLOCKER', msg:'A phone number has not been purchased/added to this subaccount yet.'});
+  return list;
+}
+function blockerChips(aid){
+  const bs=blockersFor(aid);
+  if(!bs.length) return '<span class="dim">&mdash;</span>';
+  return bs.map(b=>`<span class="chip c-crit" title="${b.msg}" style="margin-right:4px">${b.type==='dns'?'DNS':'Phone #'}</span>`).join('');
+}
+function blockerBanners(aid){
+  const bs=blockersFor(aid);
+  if(!bs.length) return '';
+  return `<div style="display:flex;flex-direction:column;gap:8px;margin:14px 0">`+bs.map(b=>`
+    <div class="alertbox" style="border-color:var(--crit-line);background:var(--crit-soft)">
+      <h4 style="color:var(--crit)">${ic('alert',13)} ${b.title}</h4>
+      <p style="font-size:12.5px;margin-top:2px">${b.msg}</p></div>`).join('')+`</div>`;
+}
+
 /* readiness + pipeline stage now come from the audit */
 function readiness(id){ return Math.round(markedCount(id)/TOTAL_ITEMS*100); }
 function groupStat(aid,g){
@@ -2120,6 +2149,7 @@ function vAccount(){
       <button class="btn" id="expandAll">Expand all</button>
     </div>
   </div>
+  ${blockerBanners(a.id)}
 
   <div class="grid-2" style="grid-template-columns:1fr 390px">
     <div style="display:flex;flex-direction:column;gap:12px">
@@ -2209,7 +2239,7 @@ function vAccount(){
             <dt>Pipeline Stage</dt><dd>${STATUS[acctStage(a.id)].l}</dd>
             <dt>Owner</dt><dd>${esc(a.city)}</dd>
             <dt>Percentage</dt><dd class="num">${pctv}% <span class="dim">(computed)</span></dd>
-            <dt>Blockers</dt><dd>${esc(latestNote(a.id))||'<span class="dim">&mdash;</span>'}</dd>
+            <dt>Blockers</dt><dd>${(()=>{const bs=blockersFor(a.id);return bs.length?bs.map(b=>b.title).join(', '):'<span class="dim">None</span>';})()}</dd>
             <dt>Last Updated</dt><dd>Sep 9, 2026</dd>
           </dl>
           <button class="btn sm" style="margin-top:11px" onclick="toast('Row copied for the tracking sheet')">${ic('copy')}Copy sheet row</button>
@@ -2404,7 +2434,7 @@ function vAcctList(){
         <td>${fx?`<span class="chip c-crit"><i class="dot"></i>${fx}</span>`:'<span class="chip c-ok"><i class="dot"></i>Clear</span>'}</td>
         <td>${a.block==='none'?'<span class="dim">&mdash;</span>':`<span class="chip ${b.c}"><i class="dot"></i>${b.l}</span>`}</td>
         <td class="hide-sm num ${stale(a)?'':'dim'}" style="white-space:nowrap;${stale(a)?'color:var(--crit);font-weight:600':''}">${a.days}d</td>
-        <td class="muted hide-sm" style="font-size:12px;max-width:230px">${esc(latestNote(a.id))||'<span class="dim">&mdash;</span>'}</td>
+        <td class="hide-sm" style="font-size:12px;max-width:230px">${blockerChips(a.id)}</td>
         <td><div class="rowact"><button class="btn sm">Open${ic('chev',12)}</button></div></td>
       </tr>`;}).join('')}
     </tbody></table></div>
@@ -2952,7 +2982,7 @@ function statusAnswer(a){
   return {m:`<p><b>${esc(a.name)}</b> — ${STATUS[acctStage(a.id)].l}, <b>${pct}% complete</b>.</p>
     <p>${markedCount(a.id)} of ${TOTAL_ITEMS} checklist items done, ${inc.length} outstanding.${fnd.length?` ${fnd.length} carry a note from the last audit.`:''}</p>
     ${top.length?`<p>Most outstanding:</p><ul>${top.map(([n,c])=>`<li>${n} — ${c} item${c===1?'':'s'}</li>`).join('')}</ul>`:''}
-    ${latestNote(a.id)?`<p class="dim" style="font-size:12px">Blocker: ${esc(latestNote(a.id))}</p>`:''}`,
+    ${(()=>{const bs=blockersFor(a.id);return bs.length?`<p class="dim" style="font-size:12px">Blockers: ${bs.map(b=>b.title).join(', ')}</p>`:'';})()}`,
     acts:[ACT('Open '+esc(a.name.split(' ')[0]),'go:'+a.id,1)]};
 }
 function agentReply(q){
