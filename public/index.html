@@ -866,60 +866,63 @@ const SESSION = { user:null };
 const signedIn = ()=>!!SESSION.user;
 const isOwner  = ()=>signedIn() && SESSION.user.role==='Owner';
 function signIn(m){ SESSION.user=m; S.view='dashboard'; closeModal(); render(); toast('Signed in as '+m.n); }
-function signOut(){ const n=SESSION.user?SESSION.user.n:''; SESSION.user=null; S.view='dashboard'; S.chatOpen=false; closeChat(); render(); toast(n?n+' signed out':'Signed out'); }
+function signOut(){ if(window.__fosAuth){ window.__fosAuth.logout(); return; } SESSION.user=null; S.view='dashboard'; S.chatOpen=false; closeChat(); render(); }
+
+/* ---------- activity log (reflects real actions in this workspace) ---------- */
+let ACTIVITY = [];
+const actor = ()=> (SESSION.user ? SESSION.user.n : 'You');
+function relTime(ts){ const s=Math.max(0,(Date.now()-ts)/1000); if(s<45) return 'just now'; if(s<3600) return Math.floor(s/60)+'m ago'; if(s<86400) return Math.floor(s/3600)+'h ago'; try{return new Date(ts).toLocaleDateString();}catch(e){return '';} }
+function logActivity(k,b,m){ ACTIVITY.unshift({k,b,m,ts:Date.now()}); if(ACTIVITY.length>60) ACTIVITY.length=60; try{ render(); }catch(e){} }
+
 function vGate(){
   return `<div class="gate">
     <div class="gate-card">
       <div class="logo" role="img" aria-label="fenceOS Communicator" style="margin-bottom:22px"></div>
       <h1 style="font-size:20px">Sign in</h1>
-      <p class="muted" style="font-size:13.5px;margin-top:6px;max-width:44ch">This console is invite only. Enter the email address you were invited with.</p>
+      <p class="muted" style="font-size:13.5px;margin-top:6px;max-width:44ch">Sign in to your fenceOS Communicator workspace. Your data is saved to your account and syncs across devices.</p>
       <div class="f" style="margin-top:18px">
         <label for="gEmail">Work email</label>
-        <input id="gEmail" type="email" placeholder="you@integratorssolutions.com" autocomplete="email">
-        <div class="err" id="gErr">That address has not been invited to this console.</div>
+        <input id="gEmail" type="email" placeholder="you@example.com" autocomplete="email">
       </div>
-      <button class="btn pri lg" id="gGo" style="width:100%;margin-top:12px">Continue${ic('arrow')}</button>
-      <div class="gate-quick">
-        <span class="eyebrow">Invited &mdash; tap to sign in</span>
-        <div style="display:flex;flex-direction:column;gap:6px;margin-top:9px">
-          ${TEAM.map((m,i)=>`<button class="btn sm" data-gq="${i}" style="justify-content:flex-start;gap:9px">
-            <span class="av" style="width:22px;height:22px;font-size:9.5px">${m.init}</span>
-            <span style="flex:1;text-align:left"><b style="font-weight:600">${esc(m.n)}</b>
-            <span class="dim" style="font-weight:400"> &middot; ${esc(m.e)}</span></span></button>`).join('')}
-        </div>
+      <div class="f" style="margin-top:12px">
+        <label for="gPass">Password</label>
+        <input id="gPass" type="password" placeholder="&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;" autocomplete="current-password">
       </div>
-      <p class="dim" style="font-size:11.5px;margin-top:18px;line-height:1.5">${ic('alert',11)} This prototype runs entirely in your browser, so it cannot truly enforce access. Anyone with the link can still read the page source. Real gating needs the backend.</p>
+      <div class="err" id="gErr" style="display:none">Invalid email or password.</div>
+      <button class="btn pri lg" id="gGo" style="width:100%;margin-top:14px">Sign in${ic('arrow')}</button>
+      <p class="dim" style="font-size:11.5px;margin-top:18px;line-height:1.5">Each person gets their own workspace, synced to the server. Ask an owner for an invite if you don&rsquo;t have an account yet.</p>
     </div>
   </div>`;
 }
 function bindGate(){
-  const go=()=>{
-    const v=($('#gEmail').value||'').trim().toLowerCase();
-    const m=TEAM.find(x=>x.e.toLowerCase()===v);
-    if(!m){ $('[data-f-gate]')||0; $('#gEmail').closest('.f').classList.add('bad'); $('#gEmail').focus(); return; }
-    signIn(m);
+  const go=async()=>{
+    const email=($('#gEmail').value||'').trim();
+    const password=($('#gPass')?$('#gPass').value:'')||'';
+    const err=$('#gErr'), btn=$('#gGo');
+    if(!email||!password){ if(err){err.textContent='Enter your email and password.';err.style.display='block';} return; }
+    if(btn){ btn.disabled=true; }
+    const res = window.__fosAuth ? await window.__fosAuth.login(email,password) : {ok:false,error:'Auth unavailable'};
+    if(!res.ok){ if(err){err.textContent=res.error||'Sign in failed.';err.style.display='block';} if(btn) btn.disabled=false; }
+    // on success __fosAuth.login reloads the page as the new user
   };
-  $('#gGo').onclick=go;
-  $('#gEmail').addEventListener('keydown',e=>{ if(e.key==='Enter') go(); });
-  $('#gEmail').addEventListener('input',()=>$('#gEmail').closest('.f').classList.remove('bad'));
-  $$('[data-gq]').forEach(b=>b.onclick=()=>signIn(TEAM[b.dataset.gq]));
+  if($('#gGo')) $('#gGo').onclick=go;
+  const em=$('#gEmail'), pw=$('#gPass');
+  if(em) em.addEventListener('keydown',e=>{ if(e.key==='Enter'){ if(pw&&!pw.value){pw.focus();return;} go(); } });
+  if(pw) pw.addEventListener('keydown',e=>{ if(e.key==='Enter') go(); });
 }
 function openSignIn(){
-  modal(`<div class="modal" role="dialog" aria-modal="true" style="width:min(480px,100%)">
+  modal(`<div class="modal" role="dialog" aria-modal="true" style="width:min(440px,100%)">
     <div class="modal-head" style="flex-direction:column;align-items:flex-start;gap:10px">
       <div class="logo sm" role="img" aria-label="fenceOS Communicator"></div>
       <div><h2>Sign in</h2>
-      <p class="muted" style="font-size:13px;margin-top:3px">Choose who you are to open the console</p></div></div>
+      <p class="muted" style="font-size:13px;margin-top:3px">Sign in to open your workspace</p></div></div>
     <div class="modal-body">
-      ${TEAM.map((m,i)=>`<button class="check" data-si="${i}" style="width:100%;border-radius:var(--r);border:1px solid var(--line);margin-bottom:7px">
-        <span class="av" style="flex:none">${m.init}</span>
-        <span style="flex:1;min-width:0"><b>${esc(m.n)}</b><span class="sub">${esc(m.r)} &middot; ${esc(m.e)}</span></span>
-        <span class="chip ${m.role==='Owner'?'c-run':'c-idle'}" style="align-self:center">${m.role}</span></button>`).join('')}
-      <div class="alertbox" style="margin-top:12px"><h4>${ic('alert',13)} No password, and that is deliberate</h4>
-        <p>This page runs entirely in your browser, so it has nothing to check a password against. A password box here would look like security without providing any &mdash; anyone could still read the data. Real sign-in needs the backend.</p></div>
+      <div class="f"><label for="gEmail">Work email</label><input id="gEmail" type="email" placeholder="you@example.com" autocomplete="email"></div>
+      <div class="f" style="margin-top:10px"><label for="gPass">Password</label><input id="gPass" type="password" placeholder="&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;" autocomplete="current-password"></div>
+      <div class="err" id="gErr" style="display:none">Invalid email or password.</div>
     </div>
-    <div class="modal-foot"><button class="btn" onclick="closeModal()">Cancel</button></div></div>`);
-  $$('[data-si]').forEach(b=>b.onclick=()=>signIn(TEAM[b.dataset.si]));
+    <div class="modal-foot"><button class="btn" onclick="closeModal()">Cancel</button><div class="sp"></div><button class="btn pri" id="gGo">Sign in</button></div></div>`);
+  bindGate();
 }
 
 const NAV = [
@@ -1085,10 +1088,11 @@ function vDash(){
     </div>
     <div class="card">
       <div class="pad" style="border-bottom:1px solid var(--line)"><h2>Recent activity</h2></div>
-      <div class="feed">${FEED.map(f=>{
-        const map={ok:['ok-soft','ok','check'],crit:['crit-soft','crit','alert'],warn:['warn-soft','warn','alert'],hand:['hand-soft','hand','hand']}[f.k];
+      <div class="feed">${ACTIVITY.length ? ACTIVITY.slice(0,12).map(f=>{
+        const map=({ok:['ok-soft','ok','check'],crit:['crit-soft','crit','alert'],warn:['warn-soft','warn','alert'],hand:['hand-soft','hand','hand'],info:['accent-soft','accent','dot']})[f.k]||['ok-soft','ok','check'];
         return `<div class="feed-item"><div class="fi" style="background:var(--${map[0]});color:var(--${map[1]})">${ic(map[2],11)}</div>
-        <div class="txt"><b>${f.b}</b> ${f.m}<time>${f.t} AM</time></div></div>`;}).join('')}</div>
+        <div class="txt"><b>${esc(f.b)}</b> ${f.m}<time>${f.ts?relTime(f.ts):((f.t||'')+' AM')}</time></div></div>`;}).join('')
+        : `<div class="pad"><p class="dim" style="font-size:12.5px">No activity yet. Your actions &mdash; creating subaccounts, adding notes, running audits &mdash; will appear here.</p></div>`}</div>
     </div>
   </div>`;
 }
@@ -1249,7 +1253,7 @@ function bindWiz(){
       const init=(S.form.bname||'NA').split(/\s+/).slice(0,2).map(w=>w[0]).join('').toUpperCase();
       const acc={id,name:S.form.bname,city:S.form.contact,status:'creation',prog:0,block:'none',note:'',created:'Sep 9, 2026',days:0,init};
       ACCOUNTS.unshift(acc); MARKS[id]=new Set(); FIND[id]={}; NOTES[id]=[];
-      S.acct=id; S.view='account'; render(); window.scrollTo(0,0);
+      S.acct=id; S.view='account'; logActivity('ok',actor(),'created subaccount <b>'+esc(acc.name)+'</b>'); render(); window.scrollTo(0,0);
       toast('Subaccount added — work the checklist, then run the audit'); return;
     }
     S.wizStep++; render(); window.scrollTo(0,0);
@@ -2224,15 +2228,15 @@ function bindAccount(){
   const elg=$('#editLogo'); if(elg) elg.onclick=()=>openAcctLogo(a);
   const el2=$('#editLink2'); if(el2) el2.onclick=()=>openLinkEditor(a);
   const da=$('#delAcct'); if(da) da.onclick=()=>openDeleteAcct(a);
-  const ra=$('#runAudit'); if(ra) ra.onclick=()=>{ S.view='workspace'; S.run.logs=[]; S.run.ts={}; render(); setTimeout(runStep,400); };
-  const sel=$('#stageSel'); if(sel) sel.onchange=()=>{ if(sel.value===derivedStage(a.id)) delete OVERRIDE[a.id]; else OVERRIDE[a.id]=sel.value; render(); toast('Pipeline stage set to '+STATUS[sel.value].l); };
+  const ra=$('#runAudit'); if(ra) ra.onclick=()=>{ S.view='workspace'; S.run.logs=[]; S.run.ts={}; logActivity('ok','Setup Agent','started an audit on <b>'+esc(a.name)+'</b>'); render(); setTimeout(runStep,400); };
+  const sel=$('#stageSel'); if(sel) sel.onchange=()=>{ if(sel.value===derivedStage(a.id)) delete OVERRIDE[a.id]; else OVERRIDE[a.id]=sel.value; logActivity('info',actor(),'set <b>'+esc(a.name)+'</b> stage to '+STATUS[sel.value].l); toast('Pipeline stage set to '+STATUS[sel.value].l); };
   const fnd=openFindings(a.id);
   $$('[data-find]').forEach(b=>b.onclick=()=>openFinding(fnd[b.dataset.find],a));
   const add=$('#noteAdd'), inp=$('#noteInput');
   if(add) add.onclick=()=>{ const v=(inp.value||'').trim(); if(!v){inp.focus();return;}
-    NOTES[a.id].push({id:noteSeq++,at:'Sep 9, 2026',who:'Ryan Malaluan',text:v}); render(); toast('Note added'); };
+    NOTES[a.id].push({id:noteSeq++,at:new Date().toLocaleDateString(),who:actor(),text:v}); logActivity('info',actor(),'added a note on <b>'+esc(a.name)+'</b>'); toast('Note added'); };
   if(inp) inp.addEventListener('keydown',e=>{ if((e.metaKey||e.ctrlKey)&&e.key==='Enter') add.click(); });
-  $$('[data-del]').forEach(b=>b.onclick=()=>{ NOTES[a.id]=NOTES[a.id].filter(n=>n.id!=b.dataset.del); render(); toast('Note deleted'); });
+  $$('[data-del]').forEach(b=>b.onclick=()=>{ NOTES[a.id]=NOTES[a.id].filter(n=>n.id!=b.dataset.del); logActivity('warn',actor(),'removed a note on <b>'+esc(a.name)+'</b>'); toast('Note deleted'); });
   $$('[data-edit]').forEach(b=>b.onclick=()=>{
     const id=b.dataset.edit, note=NOTES[a.id].find(n=>n.id==id), pEl=$(`[data-ntext="${id}"]`);
     pEl.outerHTML=`<textarea data-etext="${id}">${esc(note.text)}</textarea><div class="btn-row" style="margin-top:7px"><button class="btn sm pri" data-save="${id}">Save</button><button class="btn sm" data-cancel="1">Cancel</button></div>`;
@@ -2313,7 +2317,7 @@ function openDeleteAcct(a){
     const i=ACCOUNTS.findIndex(x=>x.id===a.id);
     if(i>-1) ACCOUNTS.splice(i,1);
     delete MARKS[a.id]; delete FIND[a.id]; delete NOTES[a.id]; delete OVERRIDE[a.id];
-    S.acct=null; S.view='accounts'; render(); toast(a.name+' removed from the console');
+    S.acct=null; S.view='accounts'; logActivity('crit',actor(),'removed subaccount <b>'+esc(a.name)+'</b>'); toast(a.name+' removed from the console');
   };
 }
 function openFinding(f,a){
@@ -3008,9 +3012,9 @@ render();
    If the state API is unavailable, the app still works from localStorage.
    ============================================================ */
 (function () {
-  const KEY = 'fos-state-v1';
   const API = '/api/state';
-  const WS = 'default';
+  let uid = null;
+  const localKey = () => 'fos-state-v2-' + (uid || 'anon');
 
   // Set instances (S.feats, MARKS[aid]) survive JSON via a small marker.
   const replacer = (k, v) => (v instanceof Set ? { __set: [...v] } : v);
@@ -3028,15 +3032,13 @@ render();
     src.forEach((x) => target.push(x));
   };
 
-  // includeSession: localStorage keeps the sign-in; the shared server copy does not.
-  function snapshot(includeSession) {
-    const snap = {
+  // The synced workspace (no session — that lives in the auth cookie).
+  function snapshot() {
+    return {
       S: { feats: S.feats, form: S.form, useRec: S.useRec, tech: S.tech, setTab: S.setTab },
       ACCOUNTS, MARKS, FIND, OVERRIDE, NOTES, noteSeq,
-      SNAPSHOTS, TEAM, PREFS, BRAND, COMM,
+      SNAPSHOTS, TEAM, PREFS, BRAND, COMM, ACTIVITY,
     };
-    if (includeSession) snap.SESSION = SESSION;
-    return snap;
   }
 
   function apply(data) {
@@ -3048,7 +3050,6 @@ render();
       if ('tech' in data.S) S.tech = data.S.tech;
       if (data.S.setTab) S.setTab = data.S.setTab;
     }
-    if (data.SESSION) fillObj(SESSION, data.SESSION);
     if (data.ACCOUNTS) fillArr(ACCOUNTS, data.ACCOUNTS);
     if (data.MARKS) fillObj(MARKS, data.MARKS);
     if (data.FIND) fillObj(FIND, data.FIND);
@@ -3060,76 +3061,100 @@ render();
     if (data.PREFS) fillObj(PREFS, data.PREFS);
     if (data.BRAND) fillObj(BRAND, data.BRAND);
     if (data.COMM && data.COMM.base) COMM = data.COMM;
+    if (Array.isArray(data.ACTIVITY)) fillArr(ACTIVITY, data.ACTIVITY);
   }
 
   function saveLocal() {
-    try { localStorage.setItem(KEY, JSON.stringify(snapshot(true), replacer)); } catch (e) {}
+    try { localStorage.setItem(localKey(), JSON.stringify(snapshot(), replacer)); } catch (e) {}
   }
   function loadLocal() {
-    try { return JSON.parse(localStorage.getItem(KEY) || 'null', reviver); } catch (e) { return null; }
+    try { return JSON.parse(localStorage.getItem(localKey()) || 'null', reviver); } catch (e) { return null; }
   }
   async function saveServer() {
     try {
-      const data = JSON.parse(JSON.stringify(snapshot(false), replacer)); // plain JSON w/ Set markers
+      const data = JSON.parse(JSON.stringify(snapshot(), replacer)); // plain JSON w/ Set markers
       await fetch(API, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ key: WS, data }),
+        body: JSON.stringify({ data }),
         keepalive: true,
       });
     } catch (e) {}
   }
   async function loadServer() {
     try {
-      const res = await fetch(API + '?key=' + encodeURIComponent(WS), { cache: 'no-store' });
+      const res = await fetch(API, { cache: 'no-store' });
       if (!res.ok) return null;
       const j = await res.json();
       return j && j.data != null ? reviveSets(j.data) : null;
     } catch (e) { return null; }
   }
 
-  // Saving stays disabled until the initial server load finishes, so a fresh
-  // device can't overwrite the shared server copy with default state first.
+  // Saving is disabled until the user is known and their state has loaded.
   let t, ready = false;
   function scheduleSave() {
-    if (!ready) return;
+    if (!ready || !uid) return;
     clearTimeout(t);
     t = setTimeout(() => { saveLocal(); saveServer(); }, 500);
   }
 
-  // 1) Instant restore from localStorage (offline cache, incl. per-device sign-in).
-  apply(loadLocal());
+  function mapUser(u) {
+    const owner = u.role === 'admin';
+    return { id: u.id, n: u.name, e: u.email, role: owner ? 'Owner' : 'Specialist', r: owner ? 'Owner' : 'Specialist', init: u.initials };
+  }
 
-  // 2) Wrap render to persist on change (no-ops until `ready`).
+  // Persist on every change (no-ops until signed in + initial load complete).
   if (typeof render === 'function') {
     const _render = render;
     render = function () { const out = _render.apply(this, arguments); scheduleSave(); return out; };
   }
 
-  applyBrand && applyBrand();
-  render();
+  async function fetchMe() {
+    try { const r = await fetch('/api/auth/me', { cache: 'no-store' }); if (!r.ok) return null; return await r.json(); }
+    catch (e) { return null; }
+  }
 
-  // 3) Load the shared server copy FIRST. If present, adopt it (server is the
-  //    cross-device source of truth). If absent, publish local to seed it.
-  loadServer().then((data) => {
-    if (data) {
-      apply(data);
-      applyBrand && applyBrand();
-      render();
-      ready = true;
-      saveLocal();
-    } else {
-      ready = true;
-      saveLocal();
-      saveServer();
-    }
-  });
+  async function hydrate() {
+    uid = SESSION.user.id;
+    apply(loadLocal());                  // instant per-user cache
+    applyBrand && applyBrand(); render();
+    const data = await loadServer();     // server is the cross-device source of truth
+    if (data) { apply(data); applyBrand && applyBrand(); render(); }
+    ready = true;
+    saveLocal();
+    if (!data) saveServer();             // seed the server for a brand-new user
+  }
 
-  window.addEventListener('beforeunload', () => { if (ready) { saveLocal(); saveServer(); } });
+  window.__fosAuth = {
+    async login(email, password) {
+      try {
+        const r = await fetch('/api/auth/login', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, password }),
+        });
+        const j = await r.json().catch(() => ({}));
+        if (!r.ok) return { ok: false, error: j.error || 'Sign in failed' };
+        location.reload();               // reinitialize cleanly as the new user
+        return { ok: true };
+      } catch (e) { return { ok: false, error: 'Network error' }; }
+    },
+    async logout() {
+      try { await fetch('/api/auth/logout', { method: 'POST' }); } catch (e) {}
+      location.reload();
+    },
+  };
 
-  // Escape hatch to clear the local cache (server copy is untouched).
+  // Boot: restore the session from the cookie, then load that user's workspace.
+  (async () => {
+    const u = await fetchMe();
+    if (u && u.id) { SESSION.user = mapUser(u); S.view = 'dashboard'; await hydrate(); }
+    else { SESSION.user = null; render(); }
+  })();
+
+  window.addEventListener('beforeunload', () => { if (ready && uid) { saveLocal(); saveServer(); } });
+
   window.fosResetState = function () {
-    try { localStorage.removeItem(KEY); } catch (e) {}
+    try { localStorage.removeItem(localKey()); } catch (e) {}
     location.reload();
   };
 })();

@@ -1,12 +1,19 @@
 import { pool } from '@/lib/db'
+import { getSessionUser } from '@/lib/auth'
 
 export const dynamic = 'force-dynamic'
 
-const DEFAULT_KEY = 'default'
+// Each signed-in user gets their own workspace row, keyed by their user id.
+async function keyFor() {
+  const user = await getSessionUser()
+  if (!user) return null
+  return 'user:' + user.uid
+}
 
-// GET /api/state?key=default — load the shared workspace state.
-export async function GET(request) {
-  const key = new URL(request.url).searchParams.get('key') || DEFAULT_KEY
+// GET /api/state — load the current user's workspace (401 if not signed in).
+export async function GET() {
+  const key = await keyFor()
+  if (!key) return Response.json({ error: 'Not authenticated' }, { status: 401 })
   try {
     const { rows } = await pool.query('SELECT data, updated_at FROM app_state WHERE key = $1', [key])
     if (!rows.length) return Response.json({ data: null })
@@ -16,15 +23,16 @@ export async function GET(request) {
   }
 }
 
-// PUT /api/state — upsert the shared workspace state (last write wins).
+// PUT /api/state — upsert the current user's workspace (401 if not signed in).
 export async function PUT(request) {
+  const key = await keyFor()
+  if (!key) return Response.json({ error: 'Not authenticated' }, { status: 401 })
   let body
   try {
     body = await request.json()
   } catch {
     return Response.json({ error: 'Invalid request body' }, { status: 400 })
   }
-  const key = (body.key || DEFAULT_KEY).toString().slice(0, 128)
   const data = body.data
   if (data == null || typeof data !== 'object') {
     return Response.json({ error: 'data object required' }, { status: 400 })

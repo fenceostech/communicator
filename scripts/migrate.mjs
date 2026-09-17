@@ -95,6 +95,29 @@ try {
     console.log('[migrate] skipping admin seed (set SEED_ADMIN_PASSWORD to create one)')
   }
 
+  // Demo login users (the invited team). Seeded locally, or in prod when
+  // SEED_USERS_PASSWORD is set. All share one demo password — change in prod.
+  const demoUsersPassword = process.env.SEED_USERS_PASSWORD || (seedDemo ? 'fenceos123' : '')
+  if (demoUsersPassword) {
+    const users = [
+      { name: 'Ryan Malaluan', email: 'ryan@example.com', role: 'admin', initials: 'RM' },
+      { name: 'Alex Moreno', email: 'alex@example.com', role: 'member', initials: 'AM' },
+      { name: 'Sam Okonkwo', email: 'sam@example.com', role: 'member', initials: 'SO' },
+    ]
+    for (const u of users) {
+      const r = await pool.query(
+        `INSERT INTO app_users (name, email, password_hash, role, initials)
+         VALUES ($1, $2, $3, $4, $5)
+         ON CONFLICT (email) DO NOTHING
+         RETURNING id`,
+        [u.name, u.email.toLowerCase(), hashPassword(demoUsersPassword), u.role, u.initials]
+      )
+      console.log(r.rowCount ? `[migrate] created user ${u.email}` : `[migrate] user ${u.email} exists`)
+    }
+  } else {
+    console.log('[migrate] skipping demo users (set SEED_USERS_PASSWORD to create them)')
+  }
+
   console.log('[migrate] done')
 } finally {
   await pool.end()
