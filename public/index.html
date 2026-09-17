@@ -3000,34 +3000,22 @@ render();
 </script>
 <script>
 /* ============================================================
-   PERSISTENCE — keep user changes across page refreshes.
+   PERSISTENCE — keep user changes across refreshes AND devices.
    Runs after the main script (classic scripts share globals).
-   Saves the mutable stores to localStorage and restores them on load.
-   Volatile UI (current view, in-flight run, modals, chat) is intentionally
-   not persisted so a refresh always lands on a clean, consistent screen.
+   - localStorage: instant, offline cache (includes the per-device sign-in).
+   - /api/state (Supabase): shared workspace synced across devices.
+   Volatile UI (current view, in-flight run, modals, chat) is not persisted.
+   If the state API is unavailable, the app still works from localStorage.
    ============================================================ */
 (function () {
   const KEY = 'fos-state-v1';
+  const API = '/api/state';
+  const WS = 'default';
 
   // Set instances (S.feats, MARKS[aid]) survive JSON via a small marker.
   const replacer = (k, v) => (v instanceof Set ? { __set: [...v] } : v);
   const reviver = (k, v) => (v && v.__set ? new Set(v.__set) : v);
-
-  function snapshot() {
-    return {
-      S: { feats: S.feats, form: S.form, useRec: S.useRec, tech: S.tech, setTab: S.setTab },
-      SESSION, ACCOUNTS, MARKS, FIND, OVERRIDE, NOTES, noteSeq,
-      SNAPSHOTS, TEAM, PREFS, BRAND, COMM,
-    };
-  }
-
-  function save() {
-    try {
-      localStorage.setItem(KEY, JSON.stringify(snapshot(), replacer));
-    } catch (e) {
-      /* ignore quota / serialization errors — best effort */
-    }
-  }
+  const reviveSets = (obj) => JSON.parse(JSON.stringify(obj), reviver);
 
   const fillObj = (target, src) => {
     if (!src || typeof src !== 'object') return;
@@ -3040,13 +3028,18 @@ render();
     src.forEach((x) => target.push(x));
   };
 
-  function restore() {
-    let data;
-    try {
-      data = JSON.parse(localStorage.getItem(KEY) || 'null', reviver);
-    } catch (e) {
-      data = null;
-    }
+  // includeSession: localStorage keeps the sign-in; the shared server copy does not.
+  function snapshot(includeSession) {
+    const snap = {
+      S: { feats: S.feats, form: S.form, useRec: S.useRec, tech: S.tech, setTab: S.setTab },
+      ACCOUNTS, MARKS, FIND, OVERRIDE, NOTES, noteSeq,
+      SNAPSHOTS, TEAM, PREFS, BRAND, COMM,
+    };
+    if (includeSession) snap.SESSION = SESSION;
+    return snap;
+  }
+
+  function apply(data) {
     if (!data) return;
     if (data.S) {
       if (data.S.feats instanceof Set) S.feats = data.S.feats;
@@ -3069,26 +3062,72 @@ render();
     if (data.COMM && data.COMM.base) COMM = data.COMM;
   }
 
-  restore();
-
-  // Save after every render (that's where nearly all state changes land).
-  if (typeof render === 'function') {
-    const _render = render;
-    let t;
-    render = function () {
-      const out = _render.apply(this, arguments);
-      clearTimeout(t);
-      t = setTimeout(save, 250);
-      return out;
-    };
+  function saveLocal() {
+    try { localStorage.setItem(KEY, JSON.stringify(snapshot(true), replacer)); } catch (e) {}
+  }
+  function loadLocal() {
+    try { return JSON.parse(localStorage.getItem(KEY) || 'null', reviver); } catch (e) { return null; }
+  }
+  async function saveServer() {
+    try {
+      const data = JSON.parse(JSON.stringify(snapshot(false), replacer)); // plain JSON w/ Set markers
+      await fetch(API, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ key: WS, data }),
+        keepalive: true,
+      });
+    } catch (e) {}
+  }
+  async function loadServer() {
+    try {
+      const res = await fetch(API + '?key=' + encodeURIComponent(WS), { cache: 'no-store' });
+      if (!res.ok) return null;
+      const j = await res.json();
+      return j && j.data != null ? reviveSets(j.data) : null;
+    } catch (e) { return null; }
   }
 
-  // Repaint with restored data, and flush on unload.
+  // Saving stays disabled until the initial server load finishes, so a fresh
+  // device can't overwrite the shared server copy with default state first.
+  let t, ready = false;
+  function scheduleSave() {
+    if (!ready) return;
+    clearTimeout(t);
+    t = setTimeout(() => { saveLocal(); saveServer(); }, 500);
+  }
+
+  // 1) Instant restore from localStorage (offline cache, incl. per-device sign-in).
+  apply(loadLocal());
+
+  // 2) Wrap render to persist on change (no-ops until `ready`).
+  if (typeof render === 'function') {
+    const _render = render;
+    render = function () { const out = _render.apply(this, arguments); scheduleSave(); return out; };
+  }
+
   applyBrand && applyBrand();
   render();
-  window.addEventListener('beforeunload', save);
 
-  // Escape hatch to clear persisted demo state.
+  // 3) Load the shared server copy FIRST. If present, adopt it (server is the
+  //    cross-device source of truth). If absent, publish local to seed it.
+  loadServer().then((data) => {
+    if (data) {
+      apply(data);
+      applyBrand && applyBrand();
+      render();
+      ready = true;
+      saveLocal();
+    } else {
+      ready = true;
+      saveLocal();
+      saveServer();
+    }
+  });
+
+  window.addEventListener('beforeunload', () => { if (ready) { saveLocal(); saveServer(); } });
+
+  // Escape hatch to clear the local cache (server copy is untouched).
   window.fosResetState = function () {
     try { localStorage.removeItem(KEY); } catch (e) {}
     location.reload();
