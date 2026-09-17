@@ -1,0 +1,834 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<meta name="description" content="UI/UX blueprint for the FenceOS AI Setup Agent — sitemap, flows, wireframes, status system, data model and integration architecture.">
+<style>
+html{color-scheme:light dark}
+body{margin:0}
+img{max-width:100%}
+[hidden]{display:none!important}
+</style>
+<title>FenceOS Agent Blueprint</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+:root{
+  --bg:#F4F6F6; --sunken:#EAEEEE; --panel:#FFFFFF; --panel-2:#F8FAFA;
+  --line:#DCE3E3; --line-2:#C0CBCB;
+  --ink:#101617; --ink-2:#4A5658; --ink-3:#78888A;
+  --accent:#0F6F77; --accent-hov:#0B565C; --accent-ink:#FFFFFF; --accent-soft:#E1EFF0; --accent-line:#96C4C6;
+  --ok:#256D4A; --ok-soft:#E1EFE7; --ok-line:#98C6AE;
+  --warn:#95590A; --warn-soft:#FAEEDA; --warn-line:#DEBA83;
+  --crit:#A02B21; --crit-soft:#FAE6E3; --crit-line:#E3A69E;
+  --hand:#5A44A3; --hand-soft:#ECE8F8; --hand-line:#B4A5E0;
+  --shadow:0 1px 2px rgba(16,22,23,.05), 0 8px 24px -12px rgba(16,22,23,.16);
+  --r:10px; --r-sm:6px;
+  --sans:"IBM Plex Sans",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+  --disp:"Archivo","IBM Plex Sans",-apple-system,"Segoe UI",sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0C1112; --sunken:#070B0C; --panel:#131A1B; --panel-2:#182122;
+  --line:#26302F; --line-2:#384645;
+  --ink:#E7EDED; --ink-2:#A3B1B2; --ink-3:#718183;
+  --accent:#3EB2B6; --accent-hov:#63C8CB; --accent-ink:#04191B; --accent-soft:#123130; --accent-line:#275453;
+  --ok:#54B583; --ok-soft:#102A20; --ok-line:#22543C;
+  --warn:#D79A45; --warn-soft:#2C2011; --warn-line:#573F1C;
+  --crit:#E08076; --crit-soft:#2D1614; --crit-line:#5B2A25;
+  --hand:#A18FE0; --hand-soft:#1E1936; --hand-line:#3B3163;
+  --shadow:0 1px 2px rgba(0,0,0,.5), 0 10px 28px -14px rgba(0,0,0,.7);
+}}
+:root[data-theme="dark"]{
+  --bg:#0C1112; --sunken:#070B0C; --panel:#131A1B; --panel-2:#182122;
+  --line:#26302F; --line-2:#384645;
+  --ink:#E7EDED; --ink-2:#A3B1B2; --ink-3:#718183;
+  --accent:#3EB2B6; --accent-hov:#63C8CB; --accent-ink:#04191B; --accent-soft:#123130; --accent-line:#275453;
+  --ok:#54B583; --ok-soft:#102A20; --ok-line:#22543C;
+  --warn:#D79A45; --warn-soft:#2C2011; --warn-line:#573F1C;
+  --crit:#E08076; --crit-soft:#2D1614; --crit-line:#5B2A25;
+  --hand:#A18FE0; --hand-soft:#1E1936; --hand-line:#3B3163;
+  --shadow:0 1px 2px rgba(0,0,0,.5), 0 10px 28px -14px rgba(0,0,0,.7);
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:14.5px;line-height:1.62;-webkit-font-smoothing:antialiased}
+h1,h2,h3,h4{font-family:var(--disp);margin:0;text-wrap:balance;letter-spacing:-.018em;font-weight:600}
+h1{font-size:34px;letter-spacing:-.03em}
+h2{font-size:22px;margin:0 0 4px}
+h3{font-size:15.5px;margin:0 0 4px}
+h4{font-size:13px;margin:0 0 3px}
+p{margin:0}
+a{color:var(--accent)}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.mono{font-family:var(--mono)}
+.eyebrow{font-family:var(--disp);font-size:10.5px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-3)}
+.muted{color:var(--ink-2)}
+.dim{color:var(--ink-3)}
+
+.wrap{display:grid;grid-template-columns:212px minmax(0,1fr);gap:44px;max-width:1180px;margin:0 auto;padding:0 28px}
+.toc{position:sticky;top:0;align-self:start;height:100vh;overflow-y:auto;padding:36px 0 30px;font-size:12.5px}
+.toc .eyebrow{display:block;margin-bottom:10px}
+.toc a{display:block;padding:3.5px 9px;border-left:2px solid var(--line);color:var(--ink-2);text-decoration:none;transition:color .12s,border-color .12s}
+.toc a:hover{color:var(--accent);border-color:var(--accent-line)}
+.toc a.n{color:var(--ink-3);font-family:var(--mono);font-size:11px;padding-top:11px;border-color:transparent;pointer-events:none}
+main{padding:36px 0 100px;min-width:0}
+section{padding:34px 0;border-top:1px solid var(--line)}
+section:first-of-type{border-top:0;padding-top:6px}
+.lede{font-size:16px;line-height:1.6;color:var(--ink-2);max-width:66ch}
+.prose{max-width:70ch}
+.prose p+p{margin-top:11px}
+.stack{display:flex;flex-direction:column;gap:14px}
+.snum{display:inline-block;font-family:var(--mono);font-size:11.5px;color:var(--accent);margin-bottom:7px;letter-spacing:.04em}
+
+.card{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--shadow)}
+.pad{padding:16px 18px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+.chip{display:inline-flex;align-items:center;gap:5px;padding:2px 8px;border-radius:20px;font-size:11.5px;font-weight:600;font-family:var(--disp);border:1px solid transparent;white-space:nowrap}
+.chip i{width:5px;height:5px;border-radius:50%;background:currentColor;display:block}
+.c-ok{background:var(--ok-soft);color:var(--ok);border-color:var(--ok-line)}
+.c-run{background:var(--accent-soft);color:var(--accent);border-color:var(--accent-line)}
+.c-warn{background:var(--warn-soft);color:var(--warn);border-color:var(--warn-line)}
+.c-crit{background:var(--crit-soft);color:var(--crit);border-color:var(--crit-line)}
+.c-hand{background:var(--hand-soft);color:var(--hand);border-color:var(--hand-line)}
+.c-idle{background:var(--sunken);color:var(--ink-3);border-color:var(--line)}
+
+.tblwrap{overflow-x:auto;border:1px solid var(--line);border-radius:var(--r);background:var(--panel)}
+table{width:100%;border-collapse:collapse;font-size:13px;min-width:540px}
+th{text-align:left;font-family:var(--disp);font-size:10px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3);padding:10px 13px;border-bottom:1px solid var(--line);white-space:nowrap;background:var(--panel-2)}
+td{padding:9px 13px;border-bottom:1px solid var(--line);vertical-align:top}
+tr:last-child td{border-bottom:0}
+td code,p code,li code{font-family:var(--mono);font-size:12px;background:var(--sunken);padding:1px 4px;border-radius:3px}
+pre{font-family:var(--mono);font-size:12px;line-height:1.62;background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:14px 16px;overflow-x:auto;margin:0;color:var(--ink-2)}
+pre b{color:var(--ink);font-weight:500}
+ul,ol{margin:9px 0 0;padding-left:19px}
+li{margin-bottom:5px}
+li::marker{color:var(--ink-3)}
+
+/* flow rail */
+.flow{display:flex;align-items:stretch;gap:0;overflow-x:auto;padding:4px 2px 10px}
+.fstep{flex:1;min-width:118px;background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:11px 12px;display:flex;flex-direction:column;gap:3px;position:relative}
+.fstep + .fstep{margin-left:22px}
+.fstep + .fstep::before{content:"";position:absolute;left:-22px;top:50%;width:22px;height:1.5px;background:var(--line-2)}
+.fstep + .fstep::after{content:"";position:absolute;left:-8px;top:50%;transform:translateY(-50%) rotate(45deg);width:5px;height:5px;border-top:1.5px solid var(--line-2);border-right:1.5px solid var(--line-2)}
+.fstep b{font-family:var(--disp);font-size:12.5px;font-weight:600}
+.fstep span{font-size:11px;color:var(--ink-3);line-height:1.4}
+.fstep.key{border-color:var(--accent-line);background:var(--accent-soft)}
+.branch{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:12px}
+.bcard{border:1px solid var(--line);border-left-width:3px;border-radius:var(--r-sm);padding:9px 11px;background:var(--panel)}
+.bcard b{font-family:var(--disp);font-size:12px;display:block}
+.bcard span{font-size:11.5px;color:var(--ink-3);line-height:1.4;display:block;margin-top:1px}
+.b-ok{border-left-color:var(--ok)} .b-warn{border-left-color:var(--warn)}
+.b-hand{border-left-color:var(--hand)} .b-crit{border-left-color:var(--crit)}
+
+.note{border:1px solid var(--accent-line);background:var(--accent-soft);border-radius:var(--r);padding:14px 16px}
+.note h3{color:var(--accent)}
+.swatches{display:grid;grid-template-columns:repeat(auto-fit,minmax(112px,1fr));gap:9px}
+.sw{border:1px solid var(--line);border-radius:var(--r-sm);overflow:hidden;background:var(--panel)}
+.sw .c{height:46px}
+.sw .t{padding:6px 8px;font-size:11px;line-height:1.35}
+.sw .t b{display:block;font-family:var(--disp);font-size:11.5px}
+.sw .t span{font-family:var(--mono);font-size:10.5px;color:var(--ink-3)}
+.typerow{display:flex;flex-direction:column;gap:2px;padding:11px 0;border-bottom:1px solid var(--line)}
+.typerow:last-child{border-bottom:0}
+.typerow .lab{font-size:11px;color:var(--ink-3);font-family:var(--mono)}
+.themebtn{position:fixed;top:14px;right:16px;z-index:20;background:var(--panel);border:1px solid var(--line-2);border-radius:20px;padding:6px 12px;font:inherit;font-size:12px;color:var(--ink-2);cursor:pointer;box-shadow:var(--shadow)}
+@media (max-width:920px){
+  .wrap{grid-template-columns:1fr;gap:0;padding:0 18px}
+  .toc{position:static;height:auto;padding:26px 0 0;border-bottom:1px solid var(--line);columns:2;column-gap:18px}
+  .toc a{break-inside:avoid}
+  .grid2,.grid3,.branch{grid-template-columns:1fr}
+  h1{font-size:27px}
+  main{padding:24px 0 70px}
+}
+@media (prefers-reduced-motion:reduce){*{transition-duration:.01ms!important}}
+</style>
+</head>
+<body>
+<a href="/" class="themebtn" style="right:112px;text-decoration:none">&larr; Prototype</a>
+<button class="themebtn" id="tb">Theme</button>
+<div class="wrap">
+<nav class="toc">
+  <span class="eyebrow">Contents</span>
+  <a class="n">Structure</a>
+  <a href="#thesis">The organizing idea</a>
+  <a href="#sitemap">1 · Sitemap</a>
+  <a href="#flow">2 · User flow</a>
+  <a href="#screens">3 · Screen inventory</a>
+  <a href="#wires">4 · Wireframes</a>
+  <a href="#components">5 · Component hierarchy</a>
+  <a href="#nav">6 · Navigation</a>
+  <a class="n">Behaviour</a>
+  <a href="#status">7 · State &amp; status system</a>
+  <a href="#agent">8 · Agent interaction model</a>
+  <a href="#approval">9 · Human approval</a>
+  <a href="#errors">10 · Error &amp; recovery</a>
+  <a href="#responsive">11 · Responsive</a>
+  <a class="n">Foundations</a>
+  <a href="#design">12 · Design system</a>
+  <a href="#data">13 · Data entities</a>
+  <a href="#api">14 · Integration architecture</a>
+  <a href="#build">Build order</a>
+</nav>
+<main>
+
+<header style="padding-bottom:8px">
+  <span class="eyebrow">UI/UX blueprint · v1 · September 2026</span>
+  <h1 style="margin:8px 0 12px">FenceOS AI Setup Agent</h1>
+  <p class="lede">The screens, states and structure behind &ldquo;tell us about the business, the agent handles the setup.&rdquo; This document is the reference; the clickable prototype is the demonstration. No HighLevel integration is specified as built &mdash; sections 13 and 14 describe what the UI is shaped to accept later.</p>
+</header>
+
+<section id="thesis">
+  <span class="snum">00</span>
+  <h2>The organizing idea: three classes of work, not two</h2>
+  <div class="prose stack">
+    <p>Most agent UIs split work into &ldquo;the agent did it&rdquo; and &ldquo;the agent needs permission.&rdquo; A FenceOS subaccount build has a third class, and designing around it is the difference between a demo and a tool people trust.</p>
+    <p>Parts of a HighLevel subaccount have <b>no API write path at all</b>. Pushing a snapshot and activating a calendar are agency-UI actions. An agent that pretends otherwise either lies or silently stalls. So the interface names this class explicitly, gives it its own colour, its own node shape in the task rail and its own modal, and treats &ldquo;I have prepared everything up to this point, here is exactly what you do&rdquo; as a first-class successful outcome rather than a failure.</p>
+  </div>
+  <div class="grid3" style="margin-top:16px">
+    <div class="card pad"><span class="chip c-run"><i></i>Automatic</span>
+      <p style="margin-top:9px;font-size:13px" class="muted">The agent holds credentials and the action is reversible. It runs, logs the payload, moves on. 11 of 15 tasks.</p></div>
+    <div class="card pad"><span class="chip c-warn"><i></i>Needs approval</span>
+      <p style="margin-top:9px;font-size:13px" class="muted">An API exists, but the action spends money, is irreversible, or submits the client&rsquo;s legal identity to a third party. 2 of 15.</p></div>
+    <div class="card pad"><span class="chip c-hand"><i></i>Human step</span>
+      <p style="margin-top:9px;font-size:13px" class="muted">No endpoint exists. The agent prepares state, hands over precise instructions, then verifies the result by re-reading. 2 of 15.</p></div>
+  </div>
+  <div class="note" style="margin-top:16px">
+    <h3>Second principle: progressive disclosure by default</h3>
+    <p style="margin-top:5px;font-size:13.5px" class="muted">A specialist should be able to run a build without knowing what a pipeline ID is. Every activity line has a plain-language surface (&ldquo;Creating pipeline&hellip;&rdquo;) and a monospace technical layer underneath (the actual request body), revealed by a single global toggle. The toggle is a user preference, not a per-line control &mdash; advanced users turn it on once.</p>
+  </div>
+</section>
+
+<section id="sitemap">
+  <span class="snum">01</span>
+  <h2>Application sitemap</h2>
+  <p class="prose muted">Two levels. Everything an operator does daily is one click from the rail; everything about a single build lives under its subaccount.</p>
+<pre style="margin-top:14px"><b>/</b>                                  Dashboard — agency-wide counters, activity feed, subaccount table
+<b>/subaccounts</b>                       Full table: filter, sort, saved views
+   <b>/new</b>                           Create wizard
+      ├ step 1 · business information
+      ├ step 2 · brand &amp; primary contact
+      ├ step 3 · FenceOS configuration
+      └ step 4 · review
+   <b>/:locationId</b>                   Subaccount overview
+      ├ <b>/plan</b>                      AI setup plan (approve · edit · ask)
+      ├ <b>/run</b>                       Agent workspace — the live build
+      │    └ <b>/run/:taskId</b>          Deep link to one task's activity
+      ├ <b>/verification</b>              Check dashboard, per-check detail
+      ├ <b>/report</b>                    Completed setup report, export
+      └ <b>/settings</b>                  Re-run, duplicate configuration, archive
+<b>/runs</b>                              All agent runs across the agency
+<b>/approvals</b>                         Cross-account approval queue
+<b>/audit</b>                             Agency-wide audit log, filter + export
+<b>/snapshots</b>                         Snapshot versions and what each one installs
+<b>/settings</b>
+   ├ <b>/connections</b>                  HighLevel OAuth, Canva, Gmail, Drive
+   ├ <b>/templates</b>                    Plan templates and default module sets
+   ├ <b>/permissions</b>                  What the agent may do without asking
+   └ <b>/team</b>                         Specialists, roles, notification routing
+
+<span class="dim">Global, not a route:</span> agent chat drawer · command palette · approval modal · toasts</pre>
+</section>
+
+<section id="flow">
+  <span class="snum">02</span>
+  <h2>User flow</h2>
+  <p class="prose muted">The happy path is a single rail. Everything that interrupts it hangs off the workspace stage and returns to it &mdash; there is no dead end and no branch that leaves the operator without a next action.</p>
+  <div class="flow" style="margin-top:16px">
+    <div class="fstep"><b>Dashboard</b><span>Sees a new client needs a build</span></div>
+    <div class="fstep"><b>Wizard</b><span>4 steps, pre-filled from the branding form</span></div>
+    <div class="fstep"><b>AI plan</b><span>15 tasks, confidence, dependencies</span></div>
+    <div class="fstep key"><b>Workspace</b><span>Watches the agent build</span></div>
+    <div class="fstep"><b>Verification</b><span>Re-reads every setting</span></div>
+    <div class="fstep"><b>Complete</b><span>Report, open, duplicate</span></div>
+  </div>
+  <p class="eyebrow" style="margin:14px 0 0">Interrupts during the workspace stage &mdash; each resolves back into the run</p>
+  <div class="branch">
+    <div class="bcard b-ok"><b>Automatic task</b><span>Streams activity, logs payload, advances. No interruption.</span></div>
+    <div class="bcard b-warn"><b>Approval gate</b><span>Modal states the exact payload, reversibility and why. Approve · Reject · Ask.</span></div>
+    <div class="bcard b-hand"><b>Human step</b><span>Numbered instructions plus what the agent will re-read to confirm. &ldquo;I've done it &rarr; verify.&rdquo;</span></div>
+    <div class="bcard b-crit"><b>Failure</b><span>Named cause, the one thing that unblocks it, and three exits: fix · retry · continue without.</span></div>
+  </div>
+  <p class="prose muted" style="margin-top:16px">Two loops matter. <b>Verification &rarr; workspace:</b> &ldquo;Fix issues with AI&rdquo; re-enters the run for just the failing tasks rather than starting over. <b>Complete &rarr; wizard:</b> &ldquo;Duplicate configuration&rdquo; seeds a new build from a finished one, which is how an agency does its second, third and fortieth client.</p>
+</section>
+
+<section id="screens">
+  <span class="snum">03</span>
+  <h2>Screen inventory</h2>
+  <div class="tblwrap" style="margin-top:14px"><table>
+    <thead><tr><th style="width:23%">Screen</th><th style="width:26%">Job</th><th>Primary action</th><th style="width:15%">In prototype</th></tr></thead>
+    <tbody>
+    <tr><td><b>Dashboard</b></td><td>Is anything on fire, and what is in flight</td><td>Create new subaccount</td><td><span class="chip c-ok">Built</span></td></tr>
+    <tr><td><b>Subaccount table</b></td><td>Find one account among hundreds</td><td>Open a build</td><td><span class="chip c-ok">Built</span></td></tr>
+    <tr><td><b>Wizard · business</b></td><td>Capture what the agent needs</td><td>Continue</td><td><span class="chip c-ok">Built</span></td></tr>
+    <tr><td><b>Wizard · brand</b></td><td>Colours, logo, contact, EIN</td><td>Continue</td><td><span class="chip c-ok">Built</span></td></tr>
+    <tr><td><b>Wizard · configuration</b></td><td>Choose modules, or accept the recommendation</td><td>Continue</td><td><span class="chip c-ok">Built</span></td></tr>
+    <tr><td><b>Wizard · review</b></td><td>Last look before anything is written</td><td>Generate setup plan</td><td><span class="chip c-ok">Built</span></td></tr>
+    <tr><td><b>AI setup plan</b></td><td>Consent to a specific sequence, not a black box</td><td>Approve plan &amp; start</td><td><span class="chip c-ok">Built</span></td></tr>
+    <tr><td><b>Agent workspace</b></td><td>Watch, steer, intervene</td><td>Approve / retry / skip</td><td><span class="chip c-ok">Built</span></td></tr>
+    <tr><td><b>Approval modal</b></td><td>Decide with the payload in view</td><td>Approve &amp; continue</td><td><span class="chip c-ok">Built</span></td></tr>
+    <tr><td><b>Handoff modal</b></td><td>Do the part the API can&rsquo;t</td><td>I&rsquo;ve done it &mdash; verify</td><td><span class="chip c-ok">Built</span></td></tr>
+    <tr><td><b>Verification</b></td><td>Trust the build, or see exactly why not</td><td>Fix issues with AI</td><td><span class="chip c-ok">Built</span></td></tr>
+    <tr><td><b>Completion</b></td><td>Hand off and move on</td><td>Open subaccount</td><td><span class="chip c-ok">Built</span></td></tr>
+    <tr><td><b>Audit log</b></td><td>Prove what changed and when</td><td>Expand an action</td><td><span class="chip c-ok">Built</span></td></tr>
+    <tr><td><b>Agent chat</b></td><td>Ask instead of hunting</td><td>Act on a suggested chip</td><td><span class="chip c-ok">Built</span></td></tr>
+    <tr><td><b>Approval queue</b></td><td>One place for every waiting decision</td><td>Batch approve</td><td><span class="chip c-idle">Spec only</span></td></tr>
+    <tr><td><b>Snapshot registry</b></td><td>Know what v4.2 actually installs</td><td>Diff versions</td><td><span class="chip c-idle">Spec only</span></td></tr>
+    <tr><td><b>Connections</b></td><td>OAuth health, token expiry, scopes</td><td>Reconnect</td><td><span class="chip c-idle">Spec only</span></td></tr>
+    <tr><td><b>Agent permissions</b></td><td>Set what runs without asking</td><td>Save policy</td><td><span class="chip c-idle">Spec only</span></td></tr>
+    </tbody></table></div>
+</section>
+<section id="wires">
+  <span class="snum">04</span>
+  <h2>Wireframes</h2>
+  <p class="prose muted">Layout only &mdash; the prototype carries the finished visual design. Regions are named for the components in section 5.</p>
+
+  <h3 style="margin:20px 0 8px">Dashboard</h3>
+<pre>┌──────────┬──────────────────────────────────────────────────────────────────────┐
+│ <b>RAIL</b>     │ <b>TOPBAR</b>  breadcrumb ······················· [+ Create subaccount] │
+│ brand    ├──────────────────────────────────────────────────────────────────────┤
+│          │ ┌────────┐┌────────┐┌────────┐┌────────┐┌────────┐                   │
+│ Dashboard│ │ Total  ││In prog.││Complete││ Waiting││ Needs  │  <span class="dim">StatTile ×5</span>       │
+│ Subaccts │ │   18   ││   4    ││   11   ││ client ││ attn 2 │  <span class="dim">last two are the</span>   │
+│ Runs     │ │ ▁▃▂▅▄▆ ││        ││        ││   3    ││        │  <span class="dim">two blocker classes</span>│
+│ Approvals│ └────────┘└────────┘└────────┘└────────┘└────────┘                   │
+│ ─────────│ ┌───────────────────────────────────────────┐┌───────────────────┐   │
+│ Verify   │ │ <b>SubaccountTable</b>            [filter]    ││ <b>ActivityFeed</b>      │   │
+│ Audit    │ │ Business │Stage│ %  │Blocker│Owner│Updated ││ ● agent completed │   │
+│ Snapshots│ │ ─────────┼─────┼────┼───────┼─────┼─────── ││ ▲ A2P rejected    │   │
+│ Settings │ │ Bee Fen. │Ph.# │44% │client │AB   │Jul 29  ││ ✋ handoff waiting │   │
+│          │ │ Family F.│DNS  │56% │client │TW   │Jul 29  ││ ● brand board out │   │
+│ ─────────│ │ Jack Fen.│Ph.# │75% │agency │CG   │Jul 29  ││                   │   │
+│ user     │ └───────────────────────────────────────────┘└───────────────────┘   │
+└──────────┴──────────────────────────────────────────────────────────────────────┘</pre>
+  <p class="dim" style="font-size:12.5px;margin-top:7px">The <b>Blocker</b> column is the one addition your sheet argues for: at a glance, is this stalled on us, on the client, or on a carrier?</p>
+
+  <h3 style="margin:24px 0 8px">Agent workspace &mdash; the primary screen</h3>
+<pre>┌──────────┬──────────────────┬──────────────────────────────┬────────────────────┐
+│ RAIL     │ <b>TaskRail</b>         │ <b>AgentActivity</b>                │ <b>AgentInspector</b>     │
+│          │           10/15  │                              │      Working ●     │
+│          │ ▸ FOUNDATION     │ ┌──────────────────────────┐ │ ────────────────── │
+│          │  ✓ Create subacct│ │ 🤖 <b>Setup Agent</b>           │ │ PROGRESS           │
+│          │  ✓ Business info │ │ I'm configuring the      │ │   67%  10 of 15    │
+│          │  ✋ Install snapsh│ │ FenceOS pipeline.        │ │  ▓▓▓▓▓▓▓░░░        │
+│          │ ▸ DATA MODEL     │ │ ··· AI is working        │ │ ────────────────── │
+│          │  ✓ Pipeline      │ └──────────────────────────┘ │ ⚠ <b>Phone &amp; IVR failed</b>│
+│          │  ✓ Custom fields │ ACTIVITY   [tech detail] [1×]│ ERR_NO_NUMBER      │
+│          │  ✓ Custom values │ 10:44 ● Creating pipeline…   │ [Assign] [Retry]   │
+│          │ ▸ BRAND + INTAKE │ 10:44 ✓ Stage: New Lead      │ [Continue without] │
+│          │  ✓ Brand board   │ 10:45 ✓ Stage: Contacted     │ ────────────────── │
+│          │  ✓ Forms         │ 10:45 ✓ Stage: Estimate Sch. │ CURRENT TASK       │
+│          │  ✋ Calendars     │      ┌─────────────────────┐ │ Task / Mode / Conf │
+│          │ ▸ COMMUNICATIONS │      │ POST /v1/pipelines/ │ │ ────────────────── │
+│          │  ✓ SMS &amp; A2P     │      │ {"name":"FenceOS…"} │ │ TARGET             │
+│          │  ✗ Phone &amp; IVR   │      └─ tech layer, toggled┘ │ loc_3Ax8Qm         │
+│          │  ○ AI reception. │ 10:49 ✗ Could not configure  │ ────────────────── │
+│          │ ▸ AUTOMATION     │         the IVR — no phone    │ PERMISSIONS        │
+│          │  ○ Workflows     │         number is assigned.  │ ✓ read ✓ write     │
+│          │  ○ Follow-up     │                              │ ✋ buy numbers      │
+│          │ ▸ VERIFICATION   │                              │ ────────────────── │
+│          │  ○ Config checks │                              │ [Pause] [Retry]    │
+│          │                  │                              │ [Skip]  [Approve]  │
+│          │ ✓done ●run ○wait │                              │ [   Stop setup   ] │
+│          │ ✋human ✗failed   │                              │                    │
+└──────────┴──────────────────┴──────────────────────────────┴────────────────────┘
+   <span class="dim">The task rail is drawn as a continuous line with node markers — a fence line.
+   Node shape carries meaning independently of colour: filled circle = done,
+   pulsing ring = running, hollow = pending, square = human step, ✗ = failed.</span></pre>
+
+  <h3 style="margin:24px 0 8px">Verification</h3>
+<pre>┌──────────┬──────────────────────────────────────────────────────────────────────┐
+│ RAIL     │ ┌──────────────────────────────────────────────────────────────────┐ │
+│          │ │   ╭────╮   <b>FenceOS setup verification</b>                            │ │
+│          │ │   │ 88%│   I created a test lead, drove it through the pipeline  │ │
+│          │ │   │READY│  and re-read every setting rather than trusting what   │ │
+│          │ │   ╰────╯   I wrote earlier.                                      │ │
+│          │ │            9 passing · 2 need review · 1 failing                 │ │
+│          │ │            [Run again]  [Fix issues with AI]                     │ │
+│          │ └──────────────────────────────────────────────────────────────────┘ │
+│          │ ┌──────────────────────────────────────────────────────────────────┐ │
+│          │ │ <b>CheckList</b>                                                        │ │
+│          │ │ ✓ Subaccount created            loc_3Ax8Qm · 10:02 AM         ›  │ │
+│          │ │ ✓ Custom values populated       24 of 24                      ›  │ │
+│          │ │ ⚠ Workflows configured          18 active · 6 paused pending A2P ⌄│ │
+│          │ │   ┌ The workflows are correct. Six send SMS as their first      │ │
+│          │ │   │ action, so they stay paused until the campaign clears.      │ │
+│          │ │   │ ┌────────────────────────────────────────────┐              │ │
+│          │ │   │ │ Paused: Missed Call Text Back, Reminder 24h │  <span class="dim">tech layer</span>  │ │
+│          │ │   │ └────────────────────────────────────────────┘              │ │
+│          │ │ ✗ Phone number &amp; IVR            No number assigned            ›  │ │
+│          │ └──────────────────────────────────────────────────────────────────┘ │
+└──────────┴──────────────────────────────────────────────────────────────────────┘</pre>
+
+  <h3 style="margin:24px 0 8px">Approval modal &amp; handoff modal</h3>
+<pre>  <b>APPROVAL</b>                                <b>HANDOFF</b>
+┌────────────────────────────────┐    ┌────────────────────────────────┐
+│ 🛡 <b>Approval required</b>            │    │ ✋ <b>Your turn: Install snapshot</b>  │
+│ The agent wants to submit the  │    │ HighLevel exposes no API for   │
+│ A2P 10DLC brand and campaign   │    │ this. I've done everything up  │
+│ ────────────────────────────── │    │ to it.                         │
+│ Task        Configure SMS &amp; A2P│    │ ────────────────────────────── │
+│ Subaccount  ABC Fence — FenceOS│    │ 1. Agency view → Snapshots     │
+│ Confidence  74%                │    │ 2. Select FenceOS Master v4.2  │
+│ Reversible  <b>No</b> — a submitted   │    │ 3. Push to loc_3Ax8Qm          │
+│             campaign cannot be │    │ 4. Wait for the report email   │
+│             withdrawn          │    │ ────────────────────────────── │
+│ ┌────────────────────────────┐ │    │ ┌ WHAT I'LL CHECK WHEN BACK ─┐ │
+│ │ <b>Why this needs you</b>          │ │    │ │ Agency UI: Settings →      │ │
+│ │ A2P submits the business's │ │    │ │ Snapshots → v4.2 → Push    │ │
+│ │ legal name and EIN to the  │ │    │ │ Target: loc_3Ax8Qm         │ │
+│ │ carriers. A rejection costs│ │    │ └────────────────────────────┘ │
+│ │ days and a re-filing fee.  │ │    │                                │
+│ └────────────────────────────┘ │    │                                │
+│ ┌ EXACTLY WHAT I WILL SEND ──┐ │    │                                │
+│ │ brandId: br_9K2            │ │    │                                │
+│ │ Sample 1: "Hi {{first_name │ │    │                                │
+│ │ }}… Reply STOP to opt out."│ │    │                                │
+│ └────────────────────────────┘ │    │                                │
+│ [Reject] [Ask]    [Approve ✓] │    │ [Skip] [Open GHL]  [Done ✓]   │
+└────────────────────────────────┘    └────────────────────────────────┘
+  <span class="dim">Both modals answer the same three questions: what exactly, why me, what happens next.</span></pre>
+
+  <h3 style="margin:24px 0 8px">Create wizard &mdash; step 3</h3>
+<pre>┌──────────┬──────────────────────────────────────────────────────────────────────┐
+│ RAIL     │   ①─────②─────<b>③</b>─────④   business · brand · <b>configuration</b> · review   │
+│          │ ┌──────────────────────────────────────────────────────────────────┐ │
+│          │ │ <b>What should the agent set up?</b>                                    │ │
+│          │ │ ┌────────────────────────────────────────────────────────[ ●─]─┐ │ │
+│          │ │ │ 🤖 Use recommended FenceOS configuration                      │ │ │
+│          │ │ │ Residential + commercial contractor, one estimator → 13 of 14 │ │ │
+│          │ │ └──────────────────────────────────────────────────────────────┘ │ │
+│          │ │ ┌──────────────────────┐┌──────────────────────┐                 │ │
+│          │ │ │☑ CRM Pipeline        ││☑ Lead Management     │  <span class="dim">FeatureCard grid</span>│ │
+│          │ │ │☑ Forms               ││☑ Calendars  ✋HUMAN   │  <span class="dim">tags mark which</span> │ │
+│          │ │ │☑ SMS                 ││☑ Phone/IVR  ✋HUMAN   │  <span class="dim">modules involve a</span>│ │
+│          │ │ │☑ AI Receptionist     ││☐ Reporting           │  <span class="dim">handoff before</span>   │ │
+│          │ │ └──────────────────────┘└──────────────────────┘  <span class="dim">the user commits</span> │ │
+│          │ └──────────────────────────────────────────────────────────────────┘ │
+│          │ [Back]                            Step 3 of 4      [Continue →]      │
+└──────────┴──────────────────────────────────────────────────────────────────────┘</pre>
+</section>
+
+<section id="components">
+  <span class="snum">05</span>
+  <h2>Component hierarchy</h2>
+<pre><b>&lt;App&gt;</b>
+├─ <b>&lt;AppShell&gt;</b>
+│  ├─ &lt;NavRail&gt;              NavItem · NavBadge · UserCard
+│  ├─ &lt;TopBar&gt;              Breadcrumb · ContextActions · ThemeToggle · ChatToggle
+│  └─ &lt;ViewOutlet&gt;
+├─ <b>&lt;DashboardView&gt;</b>
+│  ├─ &lt;StatTile&gt; ×5         value · label · sub · Sparkline · severity
+│  ├─ &lt;SubaccountTable&gt;     TableRow · BusinessCell · StageBadge · ProgressCell
+│  │                        BlockerChip · RowActions
+│  └─ &lt;ActivityFeed&gt;        FeedItem(kind, actor, message, time)
+├─ <b>&lt;CreateWizard&gt;</b>
+│  ├─ &lt;StepIndicator&gt;
+│  ├─ &lt;FormField&gt;           label · control · hint · <b>error</b>   ← one validation contract
+│  ├─ &lt;ColorField&gt;          swatch + hex, two-way bound
+│  ├─ &lt;AssetDropzone&gt;
+│  ├─ &lt;RecommendBanner&gt;     Switch · rationale text
+│  ├─ &lt;FeatureCard&gt;         checkbox · name · description · HandoffTag
+│  └─ &lt;WizardFooter&gt;
+├─ <b>&lt;PlanView&gt;</b>
+│  ├─ &lt;PlanHero&gt;            agent framing · PlanStats
+│  └─ &lt;PlanTask&gt;            index · name · description · ConfidenceMeter
+│                           · DependencyRef · ModeBadge
+├─ <b>&lt;WorkspaceView&gt;</b>        ← the primary screen
+│  ├─ &lt;TaskRail&gt;            PhaseGroup › <b>&lt;TaskNode&gt;</b>(status, shape, label, tail)
+│  ├─ &lt;AgentActivity&gt;
+│  │   ├─ &lt;AgentStatement&gt;  avatar · current intent · ThinkingIndicator
+│  │   ├─ &lt;ActivityToolbar&gt; TechToggle · SpeedControl
+│  │   └─ &lt;ActivityLog&gt;     TaskHeader › <b>&lt;LogLine&gt;</b>(time, glyph, message, <b>&lt;TechDetail&gt;</b>)
+│  └─ &lt;AgentInspector&gt;
+│      ├─ &lt;ProgressBlock&gt;   &lt;AlertBox&gt;  &lt;TargetBlock&gt;
+│      ├─ &lt;PermissionList&gt;  PermissionRow(granted | human-only)
+│      └─ &lt;ControlGrid&gt;     Pause · Resume · Retry · Skip · Approve · Stop
+├─ <b>&lt;VerificationView&gt;</b>
+│  ├─ &lt;ReadinessRing&gt;       weighted score · semantic stroke
+│  └─ &lt;CheckRow&gt;            status glyph · name · summary · &lt;CheckDetail&gt;
+├─ <b>&lt;CompletionView&gt;</b>       Seal · SummaryGrid · HandoffActions
+├─ <b>&lt;AuditView&gt;</b>            FilterBar · SearchField · AuditRow › &lt;PayloadDetail&gt;
+└─ <b>Global overlays</b>
+   ├─ &lt;AgentChat&gt;           MessageList · Message · <b>&lt;ActionChip&gt;</b> · SuggestionChips
+   ├─ &lt;ApprovalModal&gt; · &lt;HandoffModal&gt; · &lt;AssignNumberModal&gt; · &lt;FixWithAIModal&gt;
+   └─ &lt;Toast&gt;
+
+<b>Shared primitives</b>  Button · Chip/StatusBadge · Meter · Card · KeyValueList
+                  Switch · Modal · ScrollArea · EmptyState · Sparkline</pre>
+  <p class="prose muted" style="margin-top:14px"><b>&lt;ActionChip&gt;</b> is worth calling out. Every agent answer that identifies a problem ends in buttons that fix it &mdash; &ldquo;Assign number&rdquo;, &ldquo;Retry setup&rdquo;. Chat that only explains is a chatbot; chat that acts is part of the control surface.</p>
+</section>
+
+<section id="nav">
+  <span class="snum">06</span>
+  <h2>Navigation structure</h2>
+  <div class="grid2" style="margin-top:14px">
+    <div class="card pad"><h3>Rail &mdash; persistent</h3>
+      <p class="muted" style="font-size:13px;margin-top:4px">Two groups. <b>Workspace</b> (Dashboard, Subaccounts, Agent Runs, Approvals) is where work happens; <b>Records</b> (Verification, Audit, Snapshots, Settings) is where you look things up. Approvals carries a live count badge &mdash; it is the only number in the navigation, because it is the only thing that blocks other people&rsquo;s work.</p></div>
+    <div class="card pad"><h3>Within a build</h3>
+      <p class="muted" style="font-size:13px;margin-top:4px">Plan &rarr; Run &rarr; Verification &rarr; Report is a sequence, not a tab bar, so it renders as breadcrumb progression. A finished build keeps all four reachable; you can always go back and read the plan that produced an account.</p></div>
+    <div class="card pad"><h3>Escapes</h3>
+      <p class="muted" style="font-size:13px;margin-top:4px">The chat drawer and the command palette (<code>&#8984;K</code>) overlay any screen without losing run state. <code>Esc</code> closes the topmost layer only. Deep links (<code>/run/:taskId</code>) let an approval notification land on the exact task.</p></div>
+    <div class="card pad"><h3>Interruption model</h3>
+      <p class="muted" style="font-size:13px;margin-top:4px">A run never navigates the user. It surfaces a modal for a decision and a toast for information. Leaving the workspace does not pause the agent &mdash; state is server-side, and the rail badge plus a push notification bring the operator back.</p></div>
+  </div>
+</section>
+<section id="status">
+  <span class="snum">07</span>
+  <h2>State &amp; status system</h2>
+  <p class="prose muted">Taken from the live <i>FenceOS Subaccount Onboarding Status Report</i> rather than invented. Four independent layers &mdash; conflating them is what makes these dashboards lie.</p>
+
+  <h3 style="margin:22px 0 6px">Layer 1 &mdash; Account pipeline stage <span class="dim" style="font-weight:400;font-size:12px">(one per subaccount, the sheet&rsquo;s &ldquo;Pipeline Stage&rdquo;)</span></h3>
+  <div class="tblwrap"><table>
+    <thead><tr><th style="width:24%">Stage</th><th style="width:16%">Badge</th><th>Meaning &amp; exit condition</th></tr></thead><tbody>
+    <tr><td><code>Subaccount Creation</code></td><td><span class="chip c-idle">Neutral</span></td><td>Form received, location not yet standing. Exits when the location ID exists.</td></tr>
+    <tr><td><code>In Review</code></td><td><span class="chip c-run"><i></i>Active</span></td><td>Agent building or specialist checking. The working state — most accounts sit here.</td></tr>
+    <tr><td><code>Waiting on DNS Records</code></td><td><span class="chip c-hand"><i></i>Client</span></td><td>Blocked on the client&rsquo;s domain or their web developer. Not an agent failure.</td></tr>
+    <tr><td><code>Phone # Pending</code></td><td><span class="chip c-warn"><i></i>Blocked</span></td><td>The dominant bottleneck in your data. Number not purchased or not authorised.</td></tr>
+    <tr><td><code>A2P Approved</code></td><td><span class="chip c-ok"><i></i>Cleared</span></td><td>Carrier registration through. Paused SMS workflows resume automatically here.</td></tr>
+    <tr><td><code>Initial Setup Complete</code></td><td><span class="chip c-ok"><i></i>Done</span></td><td>Build finished and verified. Handover to the client.</td></tr>
+    <tr><td><code>On Hold</code></td><td><span class="chip c-idle">Muted</span></td><td>Client disengaged or not proceeding. Excluded from in-progress counts, still searchable.</td></tr>
+    </tbody></table></div>
+
+  <h3 style="margin:24px 0 6px">Layer 2 &mdash; Readiness domains <span class="dim" style="font-weight:400;font-size:12px">(17 per subaccount, one column each in your sheet)</span></h3>
+  <p class="prose muted" style="font-size:13.5px">Access &middot; Phone Number &middot; A2P Compliance &middot; Appointment Booking Funnel &middot; Calendars &middot; Google Account Calendar Sync &middot; Sales Opportunity Board &middot; Forms &middot; Workflows &middot; Knowledge Base &middot; AI Voice &middot; AI Conversation &middot; Domain / DNS &middot; Custom Fields &middot; Custom Values &middot; Tags &middot; Integrations</p>
+  <div style="display:flex;gap:7px;flex-wrap:wrap;margin-top:11px">
+    <span class="chip c-idle">Not Started</span><span class="chip c-idle">Pending</span>
+    <span class="chip c-run"><i></i>In Progress</span><span class="chip c-ok"><i></i>Completed</span>
+    <span class="chip c-idle">On Hold</span><span class="chip c-idle">&mdash; not applicable</span>
+  </div>
+  <p class="prose muted" style="margin-top:11px">These are what the app computes <b>Percentage</b> from, replacing the manual estimate. Completed counts 1, In Progress 0.5, everything else 0, over the domains in scope for the modules that client bought. Reporting a number the operator did not type is only defensible if the operator can click it and see the 17 rows behind it &mdash; so the percentage cell opens the domain breakdown.</p>
+
+  <h3 style="margin:24px 0 6px">Layer 3 &mdash; Run task status <span class="dim" style="font-weight:400;font-size:12px">(one per task inside a run)</span></h3>
+  <div class="tblwrap"><table>
+    <thead><tr><th style="width:18%">Status</th><th style="width:24%">Node shape</th><th>Behaviour</th></tr></thead><tbody>
+    <tr><td><code>pending</code></td><td>Hollow circle, grey</td><td>Dependencies unmet or not reached.</td></tr>
+    <tr><td><code>running</code></td><td>Filled circle, pulsing halo</td><td>Streaming activity. Exactly one task at a time.</td></tr>
+    <tr><td><code>awaiting_approval</code></td><td>Ring, amber, tail &ldquo;approve&rdquo;</td><td>Run halted. Modal open. Nothing written.</td></tr>
+    <tr><td><code>awaiting_human</code></td><td><b>Square</b>, violet, tail &ldquo;you&rdquo;</td><td>Instructions issued. Agent re-reads state on return.</td></tr>
+    <tr><td><code>completed</code></td><td>Filled circle + check, green</td><td>Written and log payload recorded.</td></tr>
+    <tr><td><code>failed</code></td><td>Filled circle + ✗, red</td><td>Cause named, recovery actions offered. Run halts.</td></tr>
+    <tr><td><code>skipped</code></td><td>Dashed circle, struck label</td><td>Deliberately passed. Consequences stated before confirming.</td></tr>
+    </tbody></table></div>
+  <p class="prose muted" style="margin-top:11px">Shape carries status independently of colour, so the rail survives colour-blindness and greyscale printing.</p>
+
+  <h3 style="margin:24px 0 6px">Layer 4 &mdash; Blocker class <span class="dim" style="font-weight:400;font-size:12px">(new — argued for by your &ldquo;Blockers&rdquo; column)</span></h3>
+  <p class="prose muted">Your blocker notes fall into four kinds, and they need different people to act. Rendering them all as one red &ldquo;Needs Attention&rdquo; hides who is actually holding the build up.</p>
+  <div class="grid2" style="margin-top:12px">
+    <div class="bcard b-crit"><b>Agency &mdash; us</b><span>&ldquo;Phone number purchase pending&rdquo;. A specialist or an approval unblocks it. Red. Belongs in the approval queue.</span></div>
+    <div class="bcard b-hand"><b>Client &mdash; them</b><span>&ldquo;Anthony is not responding&rdquo;, &ldquo;Developers don&rsquo;t have access to his domain&rdquo;. Violet. Triggers the follow-up cadence in section 10, not an error state.</span></div>
+    <div class="bcard b-warn"><b>Carrier / external</b><span>A2P under review, DNS propagating. Amber. Nobody can act; the agent watches and resumes itself.</span></div>
+    <div class="bcard b-ok"><b>None</b><span>Running or done. No blocker chip on the row.</span></div>
+  </div>
+</section>
+
+<section id="agent">
+  <span class="snum">08</span>
+  <h2>AI agent interaction model</h2>
+  <div class="prose stack">
+    <p>The agent is presented as an operator with a task list, not an assistant with opinions. Four rules produce that:</p>
+  </div>
+  <div class="stack" style="margin-top:14px">
+    <div class="card pad"><h3>1 · It states intent before acting, in the user&rsquo;s vocabulary</h3>
+      <p class="muted" style="font-size:13.5px;margin-top:4px">&ldquo;I&rsquo;m configuring the FenceOS pipeline&rdquo; is the surface. <code>POST /v1/pipelines/</code> is the layer underneath. The plain sentence is never a euphemism for something broader &mdash; if the agent is about to write 24 custom values, it says 24.</p></div>
+    <div class="card pad"><h3>2 · Activity streams; it does not report at the end</h3>
+      <p class="muted" style="font-size:13.5px;margin-top:4px">Log lines append one at a time with timestamps. Long-running tasks show their sub-steps (each pipeline stage as it is created) so the operator can tell &ldquo;working&rdquo; from &ldquo;hung&rdquo;. A pulsing halo and a &ldquo;AI is working&rdquo; indicator mark live state; both stop the instant the agent stops.</p></div>
+    <div class="card pad"><h3>3 · Confidence is shown where it changes a decision</h3>
+      <p class="muted" style="font-size:13.5px;margin-top:4px">On the plan screen, per task, as a five-bar meter plus the number. It is calibrated to the task class: 96% for creating a location, 68% for phone provisioning. Low confidence on a task that also needs approval is the signal to read the payload rather than click through.</p></div>
+    <div class="card pad"><h3>4 · Every explanation ends in an action</h3>
+      <p class="muted" style="font-size:13.5px;margin-top:4px">Chat answers in an operational register &mdash; what happened, why, what unblocks it &mdash; and renders the unblocking action as a button. &ldquo;The IVR could not be completed because the subaccount does not currently have an available phone number. I can retry after a number is assigned.&rdquo; <span class="chip c-run" style="margin-left:4px">Assign number</span> <span class="chip c-idle">Retry setup</span></p></div>
+  </div>
+  <h3 style="margin:22px 0 6px">Controls the operator always has</h3>
+  <div class="tblwrap"><table>
+    <thead><tr><th style="width:16%">Control</th><th>Guarantee</th></tr></thead><tbody>
+    <tr><td><b>Pause</b></td><td>Finishes the in-flight API call, then stops. Never leaves a half-written task.</td></tr>
+    <tr><td><b>Resume</b></td><td>Continues from the exact task and log position. State is server-side.</td></tr>
+    <tr><td><b>Retry</b></td><td>Re-runs one task. The task&rsquo;s first step is always the check that failed, so a retry without a fix fails identically and fast.</td></tr>
+    <tr><td><b>Skip</b></td><td>States downstream consequences before confirming, then records the skip in the audit log.</td></tr>
+    <tr><td><b>Stop</b></td><td>Ends the run. Nothing is rolled back &mdash; the copy says so plainly, because silent rollback of a client&rsquo;s live subaccount would be worse.</td></tr>
+    </tbody></table></div>
+</section>
+
+<section id="approval">
+  <span class="snum">09</span>
+  <h2>Human approval interaction</h2>
+  <p class="prose muted">An approval is a decision, so the interface&rsquo;s job is to make the decision cheap, not to make the click easy.</p>
+  <h3 style="margin:20px 0 6px">What every approval shows</h3>
+  <div class="tblwrap"><table>
+    <thead><tr><th style="width:22%">Element</th><th>Why it is there</th></tr></thead><tbody>
+    <tr><td><b>Task &amp; subaccount</b></td><td>Approvals arrive by notification; the operator may not have context.</td></tr>
+    <tr><td><b>Confidence</b></td><td>Tells them how hard to look.</td></tr>
+    <tr><td><b>Reversibility</b></td><td>The single most decision-relevant fact. Stated in words, not a risk score: <i>&ldquo;No — a submitted campaign cannot be withdrawn without re-registering.&rdquo;</i></td></tr>
+    <tr><td><b>Why this needs you</b></td><td>Names the reason class: money, irreversibility, or the client&rsquo;s legal identity leaving the system.</td></tr>
+    <tr><td><b>Exact payload</b></td><td>Monospace, verbatim, scrollable. Not a summary of the payload.</td></tr>
+    <tr><td><b>Reject · Ask · Approve</b></td><td>Three exits. <b>Ask</b> opens chat pre-loaded with the question, so &ldquo;I don&rsquo;t understand this&rdquo; is not a dead end that pushes people to approve.</td></tr>
+    </tbody></table></div>
+  <h3 style="margin:22px 0 6px">Handoff is not approval</h3>
+  <p class="prose muted">Where approval asks &ldquo;may I?&rdquo;, a handoff says &ldquo;I can&rsquo;t, and here is precisely what to do.&rdquo; It shows numbered steps naming the exact screen and target ID, plus <b>what the agent will re-read to confirm</b> &mdash; which is what makes &ldquo;I&rsquo;ve done it&rdquo; a verification rather than an honour system. If the re-read shows the change did not land, the agent says so and keeps the handoff open.</p>
+  <h3 style="margin:22px 0 6px">Governance</h3>
+  <ul class="prose muted" style="font-size:13.5px">
+    <li>Approval policy is configurable per agency, per task class &mdash; an agency that trusts phone provisioning can set it to automatic; the class stays visible in the audit log either way.</li>
+    <li>Approvals expire. An unanswered gate ages into the queue with the run paused, not silently auto-approved.</li>
+    <li>Batch approval exists in the queue for identical low-risk gates across accounts, but never for irreversible ones.</li>
+    <li>Every approve, reject and skip records who decided and when. The audit log is the deliverable that makes this defensible to a client.</li>
+  </ul>
+</section>
+<section id="errors">
+  <span class="snum">10</span>
+  <h2>Error &amp; recovery UX</h2>
+  <p class="prose muted">Your sheet is mostly a record of blocked builds, not broken ones. The design follows that: the common case is not &ldquo;something crashed&rdquo;, it is &ldquo;this is waiting on a person or a carrier.&rdquo;</p>
+
+  <h3 style="margin:20px 0 8px">Error taxonomy</h3>
+  <div class="tblwrap"><table>
+    <thead><tr><th style="width:19%">Kind</th><th style="width:27%">Example from your data</th><th>Treatment</th></tr></thead><tbody>
+    <tr><td><span class="chip c-crit"><i></i>Hard block</span></td><td>&ldquo;Phone number purchase pending&rdquo; &mdash; <code>ERR_NO_NUMBER_ASSIGNED</code></td><td>Run halts. Named cause, the one prerequisite, three exits: fix now, retry, continue without. Downstream dependents are marked, not silently failed.</td></tr>
+    <tr><td><span class="chip c-hand"><i></i>Waiting on client</span></td><td>&ldquo;Anthony is not responding&rdquo;; &ldquo;Developers don&rsquo;t have access to his domain&rdquo;</td><td>Not an error. Account moves to a client-blocked state and enters the follow-up cadence below. Stays out of the &ldquo;needs attention&rdquo; count so real problems stay visible.</td></tr>
+    <tr><td><span class="chip c-warn"><i></i>External pending</span></td><td>A2P under carrier review; DNS propagating</td><td>Task completes as <i>submitted</i>, not <i>done</i>. Dependent workflows are installed but paused, clearly labelled. The agent polls and resumes itself.</td></tr>
+    <tr><td><span class="chip c-warn"><i></i>Partial success</span></td><td>&ldquo;Google Calendar is not connected to staff account&rdquo;</td><td>Task completes with a warning line. Verification surfaces it. Never rounded up to a green check.</td></tr>
+    <tr><td><span class="chip c-crit"><i></i>Contradiction</span></td><td>&ldquo;Subaccount already exists (contradicts Pipeline Stage)&rdquo;</td><td>The agent refuses to write and asks. Reconciling a record it does not understand is how you get duplicate subaccounts.</td></tr>
+    <tr><td><span class="chip c-idle">Transient</span></td><td>Rate limit, 5xx, token refresh</td><td>Retried silently with backoff. Only surfaced if it exhausts retries. Recorded in the audit log at debug level.</td></tr>
+    </tbody></table></div>
+
+  <h3 style="margin:24px 0 8px">The follow-up loop <span class="dim" style="font-weight:400;font-size:12.5px">— from your second tracker table</span></h3>
+  <p class="prose muted">Four things you chase clients for, each with first follow-up, second follow-up and a call. Today that lives in a spreadsheet and depends on someone remembering. It is a scheduler, which means the agent should own it.</p>
+  <div class="flow" style="margin-top:14px">
+    <div class="fstep"><b>Request sent</b><span>Form, DNS, phone auth, or Google connect</span></div>
+    <div class="fstep"><b>Follow-up 1</b><span>Auto-drafted at +7 days, specialist approves send</span></div>
+    <div class="fstep"><b>Follow-up 2</b><span>+14 days, escalating copy</span></div>
+    <div class="fstep key"><b>Call task</b><span>Assigned to the owner — a human, not an email</span></div>
+    <div class="fstep"><b>Received</b><span>Build resumes from where it stalled</span></div>
+  </div>
+  <p class="prose muted" style="margin-top:12px">Two design consequences. The dashboard gets a <b>Waiting on client</b> tile alongside <b>Needs attention</b>, because they route to different work. And the subaccount row shows <i>days in current stage</i> &mdash; a build at 44% for six weeks is a different problem from one at 44% since yesterday, and your sheet cannot currently tell them apart.</p>
+
+  <h3 style="margin:24px 0 8px">Recovery affordances</h3>
+  <ul class="prose muted" style="font-size:13.5px">
+    <li><b>Fix issues with AI</b> is honest about its limits. It splits the list into what the agent can resolve given one input from you, and what nobody can resolve yet &mdash; and says so rather than spinning on the second kind.</li>
+    <li><b>Continue without it</b> always exists next to retry. A build blocked on one number should still deliver the other fourteen tasks.</li>
+    <li><b>Consequences before confirmation.</b> Skipping the phone task states that the receptionist has nothing to answer on and missed-call text back will never fire.</li>
+    <li><b>Nothing rolls back silently.</b> Stopping a run leaves the subaccount as-is and the copy says so, because a client&rsquo;s live account is not a transaction to abort.</li>
+    <li><b>Failures are addressable.</b> Every failed task deep-links, so a notification, an audit row and a chat answer all land on the same place.</li>
+  </ul>
+</section>
+
+<section id="responsive">
+  <span class="snum">11</span>
+  <h2>Responsive &amp; mobile</h2>
+  <p class="prose muted">The realistic mobile job is not building a subaccount &mdash; it is answering an approval from a phone so a build is not stalled overnight. The breakpoints follow that.</p>
+  <div class="tblwrap" style="margin-top:14px"><table>
+    <thead><tr><th style="width:16%">Width</th><th style="width:24%">Shell</th><th>Workspace</th></tr></thead><tbody>
+    <tr><td><code>&ge; 1180px</code></td><td>Rail + content</td><td>Three panes side by side. The design target.</td></tr>
+    <tr><td><code>900–1180</code></td><td>Rail + content</td><td>Inspector becomes a right drawer over the activity stream; task rail narrows but stays.</td></tr>
+    <tr><td><code>760–900</code></td><td>Rail + content</td><td>Dashboard tiles 2-up; wizard fields single column; feature grid single column.</td></tr>
+    <tr><td><code>&lt; 760px</code></td><td>Rail becomes a sheet behind a menu button</td><td>Three panes become three tabs: <b>Tasks · Activity · Agent</b>. Activity is the default. Tables scroll horizontally inside their own container rather than crushing.</td></tr>
+    </tbody></table></div>
+  <ul class="prose muted" style="font-size:13.5px;margin-top:12px">
+    <li>Approval and handoff modals are full-height sheets on small screens, with the decision buttons pinned so the payload can scroll without hiding them.</li>
+    <li>The chat drawer goes full-width; the floating button collapses to a circle.</li>
+    <li>Touch targets 44px minimum; the task rail keeps 40px rows so nodes stay tappable.</li>
+    <li>Push notification on approval and on failure, deep-linking to the task.</li>
+  </ul>
+</section>
+
+<section id="design">
+  <span class="snum">12</span>
+  <h2>Design system</h2>
+  <p class="prose muted">A control room, not a marketing site. Restrained neutrals, one accent, and semantic colour reserved so it always means something.</p>
+
+  <h3 style="margin:20px 0 8px">Colour</h3>
+  <p class="prose muted" style="font-size:13.5px">Neutrals are biased slightly toward the accent&rsquo;s hue rather than pure grey, so panels sit with the accent instead of beside it. The accent is a petrol teal &mdash; instrument panel, not SaaS violet. Critically, <b>the accent is never used to mean &ldquo;good&rdquo;</b>; green, amber and red are held back for status alone, and violet is spent entirely on the human-step class.</p>
+  <div class="swatches" style="margin-top:12px">
+    <div class="sw"><div class="c" style="background:#0F6F77"></div><div class="t"><b>Accent</b><span>#0F6F77</span></div></div>
+    <div class="sw"><div class="c" style="background:#5A44A3"></div><div class="t"><b>Human step</b><span>#5A44A3</span></div></div>
+    <div class="sw"><div class="c" style="background:#256D4A"></div><div class="t"><b>Success</b><span>#256D4A</span></div></div>
+    <div class="sw"><div class="c" style="background:#95590A"></div><div class="t"><b>Warning</b><span>#95590A</span></div></div>
+    <div class="sw"><div class="c" style="background:#A02B21"></div><div class="t"><b>Critical</b><span>#A02B21</span></div></div>
+    <div class="sw"><div class="c" style="background:#101617"></div><div class="t"><b>Ink</b><span>#101617</span></div></div>
+    <div class="sw"><div class="c" style="background:#F4F6F6;border-bottom:1px solid var(--line)"></div><div class="t"><b>Ground</b><span>#F4F6F6</span></div></div>
+  </div>
+  <p class="prose muted" style="font-size:13px;margin-top:10px">Dark mode is a designed second palette, not an inversion: the accent lifts to <code>#3EB2B6</code> to hold contrast on a dark ground, and every semantic pair gets its own soft fill and border. Both themes are token-level, and the page respects an explicit user choice over the OS setting.</p>
+
+  <h3 style="margin:24px 0 8px">Typography</h3>
+  <div class="card pad" style="margin-top:4px">
+    <div class="typerow"><span class="lab">Archivo 600/700 — display, headings, numerals, badges</span>
+      <span style="font-family:var(--disp);font-size:25px;font-weight:700;letter-spacing:-.03em">Configure phone &amp; IVR</span></div>
+    <div class="typerow"><span class="lab">IBM Plex Sans 400/500/600 — interface and prose</span>
+      <span style="font-size:15px">I&rsquo;m configuring the FenceOS pipeline. Creating stage: Estimate Scheduled.</span></div>
+    <div class="typerow"><span class="lab">IBM Plex Mono 400/500 — the technical layer: IDs, payloads, timestamps</span>
+      <span style="font-family:var(--mono);font-size:13px">POST /v1/pipelines/ &nbsp;loc_3Ax8Qm &nbsp;10:44&nbsp;AM</span></div>
+  </div>
+  <p class="prose muted" style="font-size:13.5px;margin-top:10px">The monospace face is the progressive-disclosure signal. Anything in Plex Mono is machine truth &mdash; an identifier, a payload, a timestamp &mdash; so operators learn to read past it until they need it. <code>tabular-nums</code> everywhere digits stack.</p>
+
+  <h3 style="margin:24px 0 8px">Structure &amp; motion</h3>
+  <div class="grid2" style="margin-top:4px">
+    <div class="card pad"><h4>Spacing &amp; shape</h4><p class="muted" style="font-size:13px">4px base. Radii 6 / 10 / 14 by role, not decoration. Border, fill and shadow are spent where something genuinely separates &mdash; log lines are not cards.</p></div>
+    <div class="card pad"><h4>Status form</h4><p class="muted" style="font-size:13px">Chips carry a dot, a border and a fill; task nodes carry shape. Status is never colour alone.</p></div>
+    <div class="card pad"><h4>Motion</h4><p class="muted" style="font-size:13px">Only three: log lines slide in as they arrive, the running node pulses, the agent avatar haloes while working. All stop when the agent stops. All respect <code>prefers-reduced-motion</code>.</p></div>
+    <div class="card pad"><h4>Density</h4><p class="muted" style="font-size:13px">Comfortable in the wizard, tight in the log and tables. An operator watching a 15-task build wants lines, not cards.</p></div>
+  </div>
+</section>
+<section id="data">
+  <span class="snum">13</span>
+  <h2>Recommended data entities</h2>
+  <p class="prose muted">Modelled so that the status sheet becomes a view rather than a parallel source of truth. Every column in your tracker maps to a field or a derivation below.</p>
+<pre style="margin-top:14px"><b>agency</b>            id · name · ghl_company_id · oauth_connection_id · timezone
+                  approval_policy(jsonb) · snapshot_default_id
+
+<b>subaccount</b>        id · agency_id · business_name · ghl_location_id
+                  <span class="dim">— from the branding form —</span>
+                  website · phone · email · address · city · state · postal_code
+                  timezone · ein · ein_document_url · industry · description
+                  primary_contact_name/email/phone
+                  brand_primary_color · brand_secondary_color · brand_tone · logo_url
+                  <span class="dim">— tracker fields —</span>
+                  owner_user_id            <span class="dim">"Owner"</span>
+                  access_state             <span class="dim">"Access": granted | pending</span>
+                  pipeline_stage           <span class="dim">enum, section 7 layer 1</span>
+                  <b>blocker_class</b>            <span class="dim">none | agency | client | external</span>
+                  blocker_note             <span class="dim">"Blockers" free text</span>
+                  detailed_status_url      <span class="dim">"Checklist - TFC …" link</span>
+                  est_completion_date · stage_entered_at · created_at · updated_at
+                  <span class="dim">derived:</span> readiness_pct · days_in_stage
+
+<b>readiness_domain</b>  id · subaccount_id
+                  domain      <span class="dim">enum ×17: phone_number, a2p_compliance,</span>
+                              <span class="dim">booking_funnel, calendars, google_calendar_sync,</span>
+                              <span class="dim">opportunity_board, forms, workflows, knowledge_base,</span>
+                              <span class="dim">ai_voice, ai_conversation, domain_dns, custom_fields,</span>
+                              <span class="dim">custom_values, tags, integrations, access</span>
+                  status      <span class="dim">not_started | pending | in_progress | completed | on_hold</span>
+                  in_scope(bool) · note · evidence_ref · updated_at · updated_by
+
+<b>setup_run</b>         id · subaccount_id · plan_id · state · started_at · finished_at
+                  started_by · speed · config(jsonb: selected modules)
+
+<b>setup_task</b>        id · run_id · key · name · phase · sequence
+                  mode        <span class="dim">auto | approval | handoff</span>
+                  status      <span class="dim">section 7 layer 3</span>
+                  confidence · depends_on(uuid[]) · domain <span class="dim">→ readiness_domain</span>
+                  started_at · finished_at · error_code · error_message
+                  attempt_count · skipped_reason
+
+<b>activity_log</b>      id · run_id · task_id · at · level · message
+                  <b>technical</b>(text)         <span class="dim">the progressive-disclosure layer</span>
+                  request_payload(jsonb) · response_payload(jsonb)
+                  ghl_resource_type · ghl_resource_id
+
+<b>approval_request</b>  id · task_id · requested_at · reason_class
+                  <span class="dim">billing | irreversible | third_party_identity | destructive</span>
+                  reversible(bool) · payload_preview(text) · confidence
+                  decided_at · decided_by · decision <span class="dim">approved|rejected|expired</span>
+                  decision_note
+
+<b>handoff_request</b>   id · task_id · instructions(jsonb) · target_screen · target_ref
+                  verification_query(text)   <span class="dim">what the agent re-reads</span>
+                  issued_at · confirmed_at · confirmed_by · verified(bool)
+                  verification_result(jsonb)
+
+<b>verification_run</b>  id · subaccount_id · run_at · score · summary
+<b>verification_check</b> id · verification_run_id · key · name · status
+                  summary · detail · technical · remediable_by_agent(bool)
+
+<b>followup</b>          id · subaccount_id
+                  kind        <span class="dim">onboarding_form | domain_connection |</span>
+                              <span class="dim">virtual_phone_number | google_integration</span>
+                  requested_at · followup_1_at · followup_2_at · call_at
+                  session_scheduled_at · resolved_at · owner_user_id
+                  <span class="dim">— this is your second tracker table, made actionable</span>
+
+<b>audit_event</b>       id · agency_id · subaccount_id · actor_type <span class="dim">agent|user|system</span>
+                  actor_id · action · target_type · target_id
+                  result · payload(jsonb) · at
+
+<b>connection</b>        id · agency_id · provider <span class="dim">highlevel|canva|gmail|drive</span>
+                  scopes(text[]) · access_token · refresh_token
+                  expires_at · status · last_error
+
+<b>snapshot</b>          id · name · version · manifest(jsonb) · released_at
+<b>plan_template</b>     id · agency_id · name · task_definitions(jsonb) · default_modules</pre>
+  <p class="prose muted" style="margin-top:13px">Three notes. <code>readiness_domain</code> is deliberately a row per domain rather than 17 columns, so history and evidence attach per domain and the percentage is computed, not typed. <code>activity_log.technical</code> exists as its own column because progressive disclosure is a data requirement, not a rendering trick. And <code>handoff_request.verification_query</code> is what turns &ldquo;I&rsquo;ve done it&rdquo; into a verified fact.</p>
+</section>
+
+<section id="api">
+  <span class="snum">14</span>
+  <h2>Integration architecture &mdash; for later</h2>
+  <p class="prose muted">The UI is built around an agent/task orchestrator, so the integration layer slots underneath without reshaping any screen.</p>
+<pre style="margin-top:14px">┌──────────────────────────────────────────────────────────────────┐
+│  <b>Setup Console UI</b>   React · optimistic UI · SSE subscription     │
+└───────────────┬─────────────────────────────────▲────────────────┘
+        REST    │                                 │  Server-Sent Events
+                ▼                                 │  task.status · log.append
+┌──────────────────────────────────────────────────┴───────────────┐
+│  <b>API layer</b>   /runs · /tasks · /approvals · /handoffs           │
+│                /verification · /audit · /followups               │
+└───────────────┬──────────────────────────────────────────────────┘
+                ▼
+┌──────────────────────────────────────────────────────────────────┐
+│  <b>Task orchestrator</b>   durable state machine, one task at a time  │
+│  · resolves the dependency graph                                 │
+│  · classifies each task auto | approval | handoff                │
+│  · halts on gates, resumes from persisted position               │
+│  · retries transients with backoff, never retries a 4xx blindly  │
+│  · writes activity_log + audit_event for every attempt           │
+└───┬───────────────┬───────────────┬───────────────┬──────────────┘
+    ▼               ▼               ▼               ▼
+┌─────────┐  ┌────────────┐  ┌────────────┐  ┌──────────────┐
+│<b>HighLevel</b>│  │ <b>Canva</b>      │  │ <b>Gmail</b>      │  │ <b>Scheduler</b>     │
+│ adapter │  │ brand board│  │ form email │  │ A2P polling  │
+│ OAuth   │  │ 350×180    │  │ snapshot   │  │ follow-ups   │
+│         │  │ 300×300    │  │ report     │  │ re-verify    │
+│         │  │ 1819×646   │  │            │  │              │
+└─────────┘  └────────────┘  └────────────┘  └──────────────┘
+      │
+      ├─ <b>write endpoints</b>  locations · pipelines · custom fields
+      │                    custom values · forms · workflows · contacts
+      │                    conversations · media storage · voice agents
+      ├─ <b>read endpoints</b>   calendars · opportunities · phone numbers
+      ├─ <b>webhooks in</b>      contact created · stage changed · A2P status
+      └─ <b>no endpoint</b>      snapshot push · calendar activation
+                           user assignment · number purchase
+                              <b>└→ these become handoff_request rows.</b>
+                                 The capability gap is data, not a
+                                 hard-coded exception.</pre>
+  <div class="grid2" style="margin-top:16px">
+    <div class="card pad"><h4>Capability registry</h4><p class="muted" style="font-size:13px">Each task declares the capability it needs. The registry says whether that capability is <code>api</code>, <code>browser</code> or <code>human</code>. When HighLevel ships a snapshot endpoint, one registry row changes and the task silently upgrades from handoff to automatic. No UI work.</p></div>
+    <div class="card pad"><h4>Browser automation as a tier</h4><p class="muted" style="font-size:13px">Custom values have no write API but the settings screen is drivable. Treat browser automation as a first-class middle tier &mdash; slower, more fragile, flagged as such in the log &mdash; rather than pretending it is an API or giving up and calling it human.</p></div>
+    <div class="card pad"><h4>Idempotency</h4><p class="muted" style="font-size:13px">Every write carries a key derived from run + task + resource, so a retry after a timeout cannot create a second pipeline. This is what makes <b>Retry</b> safe to put on the screen.</p></div>
+    <div class="card pad"><h4>Verification reads, never trusts</h4><p class="muted" style="font-size:13px">Checks re-fetch from HighLevel rather than reading the app&rsquo;s own write log. A check that passes because we remember writing it is worthless.</p></div>
+  </div>
+</section>
+
+<section id="build">
+  <h2>Suggested build order</h2>
+  <ol class="prose muted" style="font-size:14px">
+    <li><b>Shell, tokens, status system.</b> Both themes, all four status layers, the chip and node vocabulary. Everything downstream depends on it.</li>
+    <li><b>Wizard and the data model.</b> Real capture into <code>subaccount</code> + <code>readiness_domain</code>. Immediately useful even with no agent &mdash; it replaces the sheet.</li>
+    <li><b>Orchestrator with a mock adapter.</b> The task graph, gates and SSE streaming, wired to a fake HighLevel. Proves the workspace before any credential exists.</li>
+    <li><b>HighLevel adapter, read paths first.</b> Verification becomes real before any write does, so the first thing the agent does for real is <i>check</i> existing accounts.</li>
+    <li><b>Write paths, in confidence order.</b> Location, pipeline, custom fields, custom values, forms, workflows. Each behind the capability registry.</li>
+    <li><b>Handoffs and approvals.</b> Snapshot, calendars, phone, A2P &mdash; the parts with real consequences.</li>
+    <li><b>Follow-up scheduler and the chase loop.</b> Retire the second tracker table.</li>
+    <li><b>Chat, audit export, duplicate configuration.</b> The leverage layer, once the core is trustworthy.</li>
+  </ol>
+  <p class="prose muted" style="margin-top:14px">Step 4 is the one worth insisting on. Pointing the verification engine at your eighteen existing subaccounts, read-only, tells you how much of the tracker it can populate on its own &mdash; before a single write endpoint is trusted with a client&rsquo;s account.</p>
+</section>
+
+</main>
+</div>
+<script>
+(function(){
+  var b=document.getElementById('tb');
+  function get(){try{return localStorage.getItem('fos-bp-theme')||'system'}catch(e){return 'system'}}
+  function set(t){try{localStorage.setItem('fos-bp-theme',t)}catch(e){}
+    if(t==='system')document.documentElement.removeAttribute('data-theme');
+    else document.documentElement.setAttribute('data-theme',t);
+    b.textContent = t==='system'?'Theme: auto':t==='dark'?'Theme: dark':'Theme: light';}
+  b.addEventListener('click',function(){var t=get();set(t==='system'?'dark':t==='dark'?'light':'system');});
+  set(get());
+})();
+</script>
+
+</body>
+</html>

@@ -4,7 +4,9 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "start": "next start"
+    "vercel-build": "next build",
+    "start": "next start",
+    "migrate": "node scripts/migrate.mjs"
   },
   "dependencies": {
     "next": "^15.2.4",

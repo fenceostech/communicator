@@ -1,8 +1,11 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   async rewrites() {
-    // Serve the static console (public/index.html) at the root path.
-    return [{ source: '/', destination: '/index.html' }]
+    // Serve the static console + blueprint (public/*.html) at clean paths.
+    return [
+      { source: '/', destination: '/index.html' },
+      { source: '/blueprint', destination: '/blueprint.html' },
+    ]
   },
   async headers() {
     return [

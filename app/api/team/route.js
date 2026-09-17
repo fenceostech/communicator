@@ -1,9 +1,13 @@
 import { pool } from '@/lib/db'
+import { requireRole } from '@/lib/auth'
 
 export const dynamic = 'force-dynamic'
 
 // GET /api/team — list members, owners first, then oldest-added.
 export async function GET() {
+  const { error } = await requireRole()
+  if (error) return error
+
   const { rows } = await pool.query(
     `SELECT id, name, title, email, role, initials, owns
      FROM team_members
@@ -12,8 +16,11 @@ export async function GET() {
   return Response.json(rows)
 }
 
-// POST /api/team — add a member.
+// POST /api/team — add a member (admin only).
 export async function POST(request) {
+  const { error } = await requireRole(['admin'])
+  if (error) return error
+
   let body
   try {
     body = await request.json()
