@@ -1,21 +1,19 @@
 import { pool } from '@/lib/db'
-import { getSessionUser } from '@/lib/auth'
+import { getSessionUser, requireRole } from '@/lib/auth'
 
 export const dynamic = 'force-dynamic'
 
-// Each signed-in user gets their own workspace row, keyed by their user id.
-async function keyFor() {
-  const user = await getSessionUser()
-  if (!user) return null
-  return 'user:' + user.uid
-}
+// Single shared workspace. Everyone signed in can READ it; only the
+// owner/admin can WRITE it. This is what enforces that invited (member)
+// users cannot change subaccount fields, checklist marks, statuses,
+// progress, config, etc. — all of that persists through this endpoint.
+const KEY = 'workspace'
 
-// GET /api/state — load the current user's workspace (401 if not signed in).
 export async function GET() {
-  const key = await keyFor()
-  if (!key) return Response.json({ error: 'Not authenticated' }, { status: 401 })
+  const user = await getSessionUser()
+  if (!user) return Response.json({ error: 'Not authenticated' }, { status: 401 })
   try {
-    const { rows } = await pool.query('SELECT data, updated_at FROM app_state WHERE key = $1', [key])
+    const { rows } = await pool.query('SELECT data, updated_at FROM app_state WHERE key = $1', [KEY])
     if (!rows.length) return Response.json({ data: null })
     return Response.json({ data: rows[0].data, updatedAt: rows[0].updated_at })
   } catch (e) {
@@ -23,10 +21,9 @@ export async function GET() {
   }
 }
 
-// PUT /api/state — upsert the current user's workspace (401 if not signed in).
 export async function PUT(request) {
-  const key = await keyFor()
-  if (!key) return Response.json({ error: 'Not authenticated' }, { status: 401 })
+  const { error } = await requireRole(['admin'])
+  if (error) return error // 401/403 for members — backend-enforced, not just UI
   let body
   try {
     body = await request.json()
@@ -42,7 +39,7 @@ export async function PUT(request) {
       `INSERT INTO app_state (key, data, updated_at)
        VALUES ($1, $2::jsonb, now())
        ON CONFLICT (key) DO UPDATE SET data = EXCLUDED.data, updated_at = now()`,
-      [key, JSON.stringify(data)]
+      [KEY, JSON.stringify(data)]
     )
     return Response.json({ ok: true })
   } catch (e) {

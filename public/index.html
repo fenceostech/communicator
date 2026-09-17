@@ -969,8 +969,9 @@ function paintNav(){
     $$('#nav a').forEach(a=>a.onclick=()=>go(a.dataset.go));
     return;
   }
-  $('#nav').innerHTML = `<div class="nav-sec eyebrow">Workspace</div>` + NAV.slice(0,4).map(n=>navItem(n,v)).join('')
-    + `<div class="nav-sec eyebrow">Records</div>` + NAV.slice(4).map(n=>navItem(n,v)).join('');
+  const navList = isOwner() ? NAV : NAV.filter(n=>n.id!=='settings');
+  $('#nav').innerHTML = `<div class="nav-sec eyebrow">Workspace</div>` + navList.slice(0,4).map(n=>navItem(n,v)).join('')
+    + `<div class="nav-sec eyebrow">Records</div>` + navList.slice(4).map(n=>navItem(n,v)).join('');
   $$('#nav a').forEach(a=>a.onclick=()=>go(a.dataset.go));
 }
 const navItem=(n,v)=>`<a data-go="${n.id}" class="${n.id===v?'on':''}">${ic(n.i)}<span>${n.n}</span>${n.badge&&pendingApprovals()?`<span class="badge">${pendingApprovals()}</span>`:''}</a>`;
@@ -991,6 +992,7 @@ function paintCrumb(){
 
 function go(v){
   if(!signedIn() && v!=='dashboard'){ openSignIn(); return; }
+  if(v==='settings' && !isOwner()){ toast('Owner only','bad'); return; }
   if(v==='findings'){ v='verify'; }
   if(v==='plan'){ v='dashboard'; }
   
@@ -1036,7 +1038,7 @@ function paintAuth(){
 }
 function topActions(){
   if(S.view==='dashboard' && !signedIn()) return '';
-  if(S.view==='dashboard') return `<button class="btn pri" onclick="startWizard()">${ic('plus')}<span class="hide-sm">Create New FenceOS Subaccount</span></button>`;
+  if(S.view==='dashboard') return isOwner()?`<button class="btn pri" onclick="startWizard()">${ic('plus')}<span class="hide-sm">Create New FenceOS Subaccount</span></button>`:'';
   if(S.view==='workspace') return `<button class="btn sm" id="techBtn">${S.tech?'Hide':'Show'} technical detail</button>`;
   return '';
 }
@@ -1119,7 +1121,7 @@ function bindDash(){
 /* ============================================================
    VIEW · WIZARD
    ============================================================ */
-function startWizard(){ S.wizStep=0; S.view='wizard'; render(); }
+function startWizard(){ if(!isOwner()){ toast('View only — only the owner can create subaccounts','bad'); return; } S.wizStep=0; S.view='wizard'; render(); }
 const WSTEPS=['Business information','Brand & contacts','FenceOS configuration','Review'];
 function vWiz(){
   return `<div class="wiz">
@@ -2021,7 +2023,7 @@ function verdictOf(aid,k){
 const isFixed = (aid,k)=>!!FIND[aid][k] && isMarked(aid,k);
 const resolvedCount = aid=>Object.keys(FIND[aid]).filter(k=>ITEM[k]&&isMarked(aid,k)).length;
 const foundOf=(aid,k)=> (FIND[aid][k]||[])[1] || '';
-function toggleMark(aid,k){ MARKS[aid].has(k)?MARKS[aid].delete(k):MARKS[aid].add(k); render(); }
+function toggleMark(aid,k){ if(!isOwner()){ toast('View only — only the owner can change the checklist','bad'); return; } MARKS[aid].has(k)?MARKS[aid].delete(k):MARKS[aid].add(k); render(); }
 function toggleGroup(aid,g){
   const ks=g.items.map(i=>key(g.id,i.id));
   const all=ks.every(k=>MARKS[aid].has(k));
@@ -2091,7 +2093,7 @@ function vAccount(){
       <div class="sp" style="margin-left:auto"></div>
       <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;justify-content:flex-end">
         <div style="display:flex;flex-direction:column;gap:3px;align-items:flex-end">
-          <select id="stageSel" style="background:var(--panel);border:1px solid var(--line-2);border-radius:var(--r-sm);padding:5px 9px;font-size:12.5px;font-weight:600;font-family:var(--disp)">
+          <select id="stageSel" ${isOwner()?'':'disabled title="View only — only the owner can change status"'} style="background:var(--panel);border:1px solid var(--line-2);border-radius:var(--r-sm);padding:5px 9px;font-size:12.5px;font-weight:600;font-family:var(--disp)">
             ${STAGE_ORDER.map(k=>`<option value="${k}" ${k===acctStage(a.id)?'selected':''}>${STATUS[k].l}</option>`).join('')}
           </select>
           <span class="dim" style="font-size:10.5px">${OVERRIDE[a.id]?`Manual &middot; audit suggests <b>${STATUS[derivedStage(a.id)].l}</b>`:'Derived from the audit'}</span>
@@ -2109,12 +2111,12 @@ function vAccount(){
       <p class="dim" style="font-size:11.5px;margin-top:7px">You tick what you have done. The agent reads the subaccount and says whether it agrees.</p>
     </div>
     <div class="pad" style="border-top:1px solid var(--line);display:flex;gap:8px;flex-wrap:wrap">
-      <button class="btn pri" id="runAudit">${ic('bot')}Run audit</button>
+      ${isOwner()?`<button class="btn pri" id="runAudit">${ic('bot')}Run audit</button>`:''}
       <button class="btn" onclick="go('audit')">${ic('list')}Activity log</button>
       ${hasLink(a)?`<a class="btn" href="${acctUrl(a)}" target="_blank" rel="noopener">${ic('ext')}Open in Communicator</a>`
                    :`<button class="btn" id="editLink2">${ic('ext')}Add Communicator link</button>`}
       <div class="sp" style="margin-left:auto"></div>
-      <button class="btn danger" id="delAcct">${ic('x')}Delete subaccount</button>
+      ${isOwner()?`<button class="btn danger" id="delAcct">${ic('x')}Delete subaccount</button>`:''}
       <button class="btn" id="expandAll">Expand all</button>
     </div>
   </div>
@@ -2144,7 +2146,9 @@ function vAccount(){
             const k=key(g.id,it.id), mk=isMarked(a.id,k), v=verdictOf(a.id,k), vm=VERDICT[v];
             const fixd = isFixed(a.id,k);
             return `<div class="item">
-              <button class="tick ${mk?'on':''}" data-k="${k}" role="checkbox" aria-checked="${mk}" aria-label="${esc(it.n)}">${mk?ic('check',11):''}</button>
+              ${isOwner()
+                ? `<button class="tick ${mk?'on':''}" data-k="${k}" role="checkbox" aria-checked="${mk}" aria-label="${esc(it.n)}">${mk?ic('check',11):''}</button>`
+                : `<span class="tick ${mk?'on':''}" role="img" title="View only" aria-label="${esc(it.n)} — ${mk?'done':'not done'}" style="cursor:default">${mk?ic('check',11):''}</span>`}
               <div class="ibody">
                 <b class="${mk?'checked':''}">${it.n}</b>
                 ${it.h?`<span class="ihint">${it.h}</span>`:''}
@@ -2186,8 +2190,8 @@ function vAccount(){
         ${(NOTES[a.id]||[]).length?(NOTES[a.id]).map(nt=>`
           <div class="note" data-note="${nt.id}">
             <div class="nhead"><b>${esc(nt.who)}</b><time>${nt.at}</time>
-              <span class="acts"><button class="btn sm ghost" data-edit="${nt.id}" style="padding:2px 7px">Edit</button>
-              <button class="btn sm ghost" data-del="${nt.id}" style="padding:2px 7px;color:var(--crit)">Delete</button></span></div>
+              ${(isOwner() && !nt.seed)?`<span class="acts"><button class="btn sm ghost" data-edit="${nt.id}" style="padding:2px 7px">Edit</button>
+              <button class="btn sm ghost" data-del="${nt.id}" style="padding:2px 7px;color:var(--crit)">Delete</button></span>`:''}</div>
             <p data-ntext="${nt.id}">${esc(nt.text)}</p>
           </div>`).join('')
         :`<div class="pad"><p class="dim" style="font-size:12.5px">No notes yet. The latest note shows as this account&rsquo;s blocker on the dashboard.</p></div>`}
@@ -2229,23 +2233,35 @@ function bindAccount(){
   const el2=$('#editLink2'); if(el2) el2.onclick=()=>openLinkEditor(a);
   const da=$('#delAcct'); if(da) da.onclick=()=>openDeleteAcct(a);
   const ra=$('#runAudit'); if(ra) ra.onclick=()=>{ S.view='workspace'; S.run.logs=[]; S.run.ts={}; logActivity('ok','Setup Agent','started an audit on <b>'+esc(a.name)+'</b>'); render(); setTimeout(runStep,400); };
-  const sel=$('#stageSel'); if(sel) sel.onchange=()=>{ if(sel.value===derivedStage(a.id)) delete OVERRIDE[a.id]; else OVERRIDE[a.id]=sel.value; logActivity('info',actor(),'set <b>'+esc(a.name)+'</b> stage to '+STATUS[sel.value].l); toast('Pipeline stage set to '+STATUS[sel.value].l); };
+  const sel=$('#stageSel'); if(sel) sel.onchange=()=>{ if(!isOwner()){ toast('View only — only the owner can change status','bad'); render(); return; } if(sel.value===derivedStage(a.id)) delete OVERRIDE[a.id]; else OVERRIDE[a.id]=sel.value; logActivity('info',actor(),'set <b>'+esc(a.name)+'</b> stage to '+STATUS[sel.value].l); toast('Pipeline stage set to '+STATUS[sel.value].l); };
   const fnd=openFindings(a.id);
   $$('[data-find]').forEach(b=>b.onclick=()=>openFinding(fnd[b.dataset.find],a));
   const add=$('#noteAdd'), inp=$('#noteInput');
-  if(add) add.onclick=()=>{ const v=(inp.value||'').trim(); if(!v){inp.focus();return;}
-    NOTES[a.id].push({id:noteSeq++,at:new Date().toLocaleDateString(),who:actor(),text:v}); logActivity('info',actor(),'added a note on <b>'+esc(a.name)+'</b>'); toast('Note added'); };
+  // Adding a note is allowed for everyone (owner + invited members) via the notes API.
+  if(add) add.onclick=async()=>{ const v=(inp.value||'').trim(); if(!v){inp.focus();return;}
+    add.disabled=true;
+    const r = window.__fosNote ? await window.__fosNote.add(a.id, v) : {ok:false,error:'Unavailable'};
+    if(!r.ok){ toast(r.error||'Could not add note','bad'); add.disabled=false; return; }
+    render(); toast('Note added'); };
   if(inp) inp.addEventListener('keydown',e=>{ if((e.metaKey||e.ctrlKey)&&e.key==='Enter') add.click(); });
-  $$('[data-del]').forEach(b=>b.onclick=()=>{ NOTES[a.id]=NOTES[a.id].filter(n=>n.id!=b.dataset.del); logActivity('warn',actor(),'removed a note on <b>'+esc(a.name)+'</b>'); toast('Note deleted'); });
-  $$('[data-edit]').forEach(b=>b.onclick=()=>{
+  // Editing/deleting notes is owner-only (buttons are only rendered for owners).
+  $$('[data-del]').forEach(b=>b.onclick=async()=>{ if(!isOwner()) return;
+    const r = window.__fosNote ? await window.__fosNote.del(a.id, b.dataset.del) : {ok:false};
+    if(!r.ok){ toast(r.error||'Could not delete note','bad'); return; }
+    render(); toast('Note deleted'); });
+  $$('[data-edit]').forEach(b=>b.onclick=()=>{ if(!isOwner()) return;
     const id=b.dataset.edit, note=NOTES[a.id].find(n=>n.id==id), pEl=$(`[data-ntext="${id}"]`);
     pEl.outerHTML=`<textarea data-etext="${id}">${esc(note.text)}</textarea><div class="btn-row" style="margin-top:7px"><button class="btn sm pri" data-save="${id}">Save</button><button class="btn sm" data-cancel="1">Cancel</button></div>`;
     const ta=$(`[data-etext="${id}"]`); ta.focus(); ta.setSelectionRange(ta.value.length,ta.value.length);
-    $(`[data-save="${id}"]`).onclick=()=>{ note.text=ta.value.trim()||note.text; render(); toast('Note updated'); };
+    $(`[data-save="${id}"]`).onclick=async()=>{ const nv=(ta.value.trim()||note.text);
+      const r = window.__fosNote ? await window.__fosNote.edit(a.id, id, nv) : {ok:false};
+      if(!r.ok){ toast(r.error||'Could not update note','bad'); return; }
+      render(); toast('Note updated'); };
     $('[data-cancel]').onclick=()=>render();
   });
 }
 function openAcctLogo(a){
+  if(!isOwner()){ toast('View only — only the owner can edit subaccount details','bad'); return; }
   modal(`<div class="modal" role="dialog" aria-modal="true" style="width:min(500px,100%)">
     <div class="modal-head"><div class="mi" style="background:var(--accent-soft);color:var(--accent)">${ic('layers',17)}</div>
       <div style="flex:1"><h2>Client logo</h2>
@@ -2274,6 +2290,7 @@ function openAcctLogo(a){
     closeModal(); render(); toast('Client logo saved'); };
 }
 function openLinkEditor(a){
+  if(!isOwner()){ toast('View only — only the owner can edit subaccount details','bad'); return; }
   const prev=id=>id?[commUrl(id),commUrl(id,'/settings/company'),commUrl(id,'/settings/phone_number')].join('\n'):'\u2014';
   modal(`<div class="modal" role="dialog" aria-modal="true" style="width:min(520px,100%)">
     <div class="modal-head"><div class="mi" style="background:var(--accent-soft);color:var(--accent)">${ic('ext',17)}</div>
@@ -2300,6 +2317,7 @@ function openLinkEditor(a){
   const cl=$('#lnkClear'); if(cl) cl.onclick=()=>{ delete a.locId; closeModal(); render(); toast('Link removed'); };
 }
 function openDeleteAcct(a){
+  if(!isOwner()){ toast('View only — only the owner can delete subaccounts','bad'); return; }
   const done=markedCount(a.id), open=openFindings(a.id).length, nn=(NOTES[a.id]||[]).length;
   modal(`<div class="modal" role="dialog" aria-modal="true" style="width:min(500px,100%)">
     <div class="modal-head"><div class="mi" style="background:var(--crit-soft);color:var(--crit)">${ic('alert',17)}</div>
@@ -3076,12 +3094,14 @@ render();
     src.forEach((x) => target.push(x));
   };
 
-  // The synced workspace (no session — that lives in the auth cookie).
+  const isAdmin = () => !!(SESSION.user && SESSION.user.role === 'Owner');
+
+  // Shared workspace. Notes live separately (/api/notes) so member note-adds
+  // aren't clobbered by the owner's full-state saves.
   function snapshot() {
     return {
       S: { feats: S.feats, form: S.form, useRec: S.useRec, tech: S.tech, setTab: S.setTab },
-      ACCOUNTS, MARKS, FIND, OVERRIDE, NOTES, noteSeq,
-      SNAPSHOTS, TEAM, PREFS, BRAND, COMM, ACTIVITY,
+      ACCOUNTS, MARKS, FIND, OVERRIDE, SNAPSHOTS, TEAM, PREFS, BRAND, COMM, ACTIVITY,
     };
   }
 
@@ -3098,8 +3118,6 @@ render();
     if (data.MARKS) fillObj(MARKS, data.MARKS);
     if (data.FIND) fillObj(FIND, data.FIND);
     if (data.OVERRIDE) fillObj(OVERRIDE, data.OVERRIDE);
-    if (data.NOTES) fillObj(NOTES, data.NOTES);
-    if (typeof data.noteSeq === 'number') noteSeq = data.noteSeq;
     if (data.SNAPSHOTS) fillArr(SNAPSHOTS, data.SNAPSHOTS);
     if (data.TEAM) fillArr(TEAM, data.TEAM);
     if (data.PREFS) fillObj(PREFS, data.PREFS);
@@ -3134,10 +3152,62 @@ render();
     } catch (e) { return null; }
   }
 
-  // Saving is disabled until the user is known and their state has loaded.
+  const fmtNoteDate = (iso) => { try { return new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }); } catch (e) { return ''; } };
+
+  async function loadNotes() {
+    try {
+      const res = await fetch('/api/notes', { cache: 'no-store' });
+      if (!res.ok) return;
+      const j = await res.json();
+      const by = {};
+      (j.notes || []).forEach((n) => {
+        (by[n.account_id] = by[n.account_id] || []).push({ id: n.id, text: n.text, who: n.author, at: fmtNoteDate(n.created_at), ts: new Date(n.created_at).getTime() });
+      });
+      Object.keys(NOTES).forEach((k) => delete NOTES[k]);
+      (Array.isArray(ACCOUNTS) ? ACCOUNTS : []).forEach((a) => {
+        // Keep the seed "blocker" note (from a.note) as read-only context, then real notes on top.
+        const seed = a.note ? [{ id: 'seed-' + a.id, text: a.note, who: 'System', at: a.created || '', ts: 0, seed: true }] : [];
+        NOTES[a.id] = seed.concat(by[a.id] || []);
+      });
+      Object.keys(by).forEach((k) => { if (!NOTES[k]) NOTES[k] = by[k]; });
+    } catch (e) {}
+  }
+
+  // Notes API — add is allowed for everyone; edit/delete require owner (server-enforced).
+  window.__fosNote = {
+    async add(accountId, text) {
+      try {
+        const res = await fetch('/api/notes', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ accountId, text }) });
+        const j = await res.json().catch(() => ({}));
+        if (!res.ok) return { ok: false, error: j.error || 'Could not add note' };
+        const n = j.note;
+        if (!Array.isArray(NOTES[accountId])) NOTES[accountId] = [];
+        NOTES[accountId].push({ id: n.id, text: n.text, who: n.author, at: fmtNoteDate(n.created_at), ts: new Date(n.created_at).getTime() });
+        return { ok: true };
+      } catch (e) { return { ok: false, error: 'Network error' }; }
+    },
+    async del(accountId, id) {
+      try {
+        const res = await fetch('/api/notes/' + id, { method: 'DELETE' });
+        if (!res.ok) { const j = await res.json().catch(() => ({})); return { ok: false, error: j.error || 'Could not delete note' }; }
+        if (Array.isArray(NOTES[accountId])) NOTES[accountId] = NOTES[accountId].filter((x) => x.id != id);
+        return { ok: true };
+      } catch (e) { return { ok: false, error: 'Network error' }; }
+    },
+    async edit(accountId, id, text) {
+      try {
+        const res = await fetch('/api/notes/' + id, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ text }) });
+        if (!res.ok) { const j = await res.json().catch(() => ({})); return { ok: false, error: j.error || 'Could not update note' }; }
+        if (Array.isArray(NOTES[accountId])) { const nn = NOTES[accountId].find((x) => x.id == id); if (nn) nn.text = text; }
+        return { ok: true };
+      } catch (e) { return { ok: false, error: 'Network error' }; }
+    },
+  };
+
+  // Saving the shared workspace is owner-only; members never write it.
   let t, ready = false;
   function scheduleSave() {
-    if (!ready || !uid) return;
+    if (!ready || !isAdmin()) return;
     clearTimeout(t);
     t = setTimeout(() => { saveLocal(); saveServer(); }, 500);
   }
@@ -3160,13 +3230,14 @@ render();
 
   async function hydrate() {
     uid = SESSION.user.id;
-    apply(loadLocal());                  // instant per-user cache
+    apply(loadLocal());                  // instant cache
     applyBrand && applyBrand(); render();
-    const data = await loadServer();     // server is the cross-device source of truth
-    if (data) { apply(data); applyBrand && applyBrand(); render(); }
+    const data = await loadServer();     // shared workspace (read-only for members)
+    if (data) apply(data);
+    await loadNotes();                   // notes from their own store
+    applyBrand && applyBrand(); render();
     ready = true;
-    saveLocal();
-    if (!data) saveServer();             // seed the server for a brand-new user
+    if (isAdmin()) { saveLocal(); if (!data) saveServer(); }  // owner seeds/persists
   }
 
   window.__fosAuth = {
@@ -3195,7 +3266,7 @@ render();
     else { SESSION.user = null; render(); }
   })();
 
-  window.addEventListener('beforeunload', () => { if (ready && uid) { saveLocal(); saveServer(); } });
+  window.addEventListener('beforeunload', () => { if (ready && isAdmin()) { saveLocal(); saveServer(); } });
 
   window.fosResetState = function () {
     try { localStorage.removeItem(localKey()); } catch (e) {}
