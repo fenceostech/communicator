@@ -4,7 +4,7 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "vercel-build": "node scripts/migrate.mjs && next build",
+    "vercel-build": "next build",
     "start": "next start",
     "migrate": "node scripts/migrate.mjs"
   },
