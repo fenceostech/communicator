@@ -2718,6 +2718,7 @@ function setTeam(){
       <div><h2>Team</h2><p class="muted" style="font-size:12.5px;margin-top:4px">Who can see the console and who findings route to.</p></div>
       <div class="sp" style="margin-left:auto"></div>
       <span class="dim" style="font-size:12px">${TEAM.length} member${TEAM.length===1?'':'s'}</span>
+      <button class="btn sm" id="tmInviteConsole">${ic('shield')}Invite to console</button>
       <button class="btn sm pri" id="tmInvite">${ic('plus')}Add member</button>
     </div>
     ${S.inviting?`<div class="note-new" style="border-top:0;border-bottom:1px solid var(--line);border-radius:0">
@@ -2757,8 +2758,51 @@ function confirmRemove(i){
       <button class="btn danger" id="tmYes">${ic('x')}Remove ${esc(m.n.split(' ')[0])}</button></div></div>`);
   $('#tmYes').onclick=()=>{ closeModal(); TEAM.splice(i,1); render(); toast(m.n+' removed from the team'); };
 }
+// Owner action: invite a real teammate to the console (emails a set-password link).
+function openConsoleInvite(){
+  modal(`<div class="modal" role="dialog" aria-modal="true" style="width:min(460px,100%)">
+    <div class="modal-head"><div class="mi" style="background:var(--accent-soft);color:var(--accent)">${ic('shield',17)}</div>
+      <div style="flex:1"><h2>Invite to console</h2>
+      <p class="muted" style="font-size:13px;margin-top:3px">They&rsquo;ll get an email link to set their own password and sign in.</p></div></div>
+    <div class="modal-body">
+      <div class="f"><label for="ivName">Name</label><input id="ivName" placeholder="Full name"></div>
+      <div class="f" style="margin-top:10px"><label for="ivEmail">Email</label><input id="ivEmail" type="email" placeholder="name@company.com"></div>
+      <div class="f" style="margin-top:10px"><label for="ivRole">Role</label>
+        <select id="ivRole" style="width:100%;padding:11px 12px;border-radius:9px;border:1px solid var(--line);background:var(--panel);color:var(--ink);font-size:14px">
+          <option value="member">Member</option><option value="admin">Owner (admin)</option></select></div>
+      <div class="err" id="ivErr" style="display:none;margin-top:10px"></div>
+      <div id="ivLink" style="display:none;margin-top:12px"></div>
+    </div>
+    <div class="modal-foot"><button class="btn" onclick="closeModal()">Cancel</button><div class="sp"></div>
+      <button class="btn pri" id="ivSend">${ic('arrow')}Send invite</button></div></div>`);
+  const send=async()=>{
+    const name=($('#ivName').value||'').trim();
+    const email=($('#ivEmail').value||'').trim();
+    const role=$('#ivRole').value;
+    const err=$('#ivErr');
+    if(!/^[^@\s]+@[^@\s]+\.[a-z]{2,}$/i.test(email)){ err.textContent='Enter a valid email address'; err.style.display='block'; return; }
+    const btn=$('#ivSend'); btn.disabled=true;
+    try{
+      const res=await fetch('/api/users/invite',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name,email,role})});
+      const j=await res.json().catch(()=>({}));
+      if(!res.ok){ err.textContent=j.error||'Could not send invite'; err.style.display='block'; btn.disabled=false; return; }
+      logActivity('info',actor(),'invited <b>'+esc(email)+'</b> to the console');
+      if(j.emailed){ closeModal(); toast('Invite emailed to '+email); return; }
+      const box=$('#ivLink'); box.style.display='block';
+      box.innerHTML=`<div class="alertbox"><h4>${ic('alert',13)} Email isn&rsquo;t configured yet</h4>
+        <p style="font-size:12.5px">Share this one-time link with ${esc(email)} so they can set their password:</p>
+        <input class="mono" readonly value="${esc(j.acceptUrl)}" style="width:100%;margin-top:8px;padding:9px;border-radius:8px;border:1px solid var(--line);font-size:12px" onclick="this.select()"></div>`;
+      btn.textContent='Done'; btn.disabled=false; btn.onclick=()=>closeModal();
+      toast('Invite created — copy the link to share');
+    }catch(e){ err.textContent='Network error'; err.style.display='block'; btn.disabled=false; }
+  };
+  $('#ivSend').onclick=send;
+  setTimeout(()=>{const e=$('#ivName'); if(e)e.focus();},60);
+}
+
 function bindSettings(){
   $$('[data-st]').forEach(b=>b.onclick=()=>{ S.setTab=b.dataset.st; S.tplG=null; render(); });
+  const invc=$('#tmInviteConsole'); if(invc) invc.onclick=openConsoleInvite;
   $$('[data-bup]').forEach(b=>b.onclick=()=>pickImage(d=>{ BRAND[b.dataset.bup]=d; applyBrand(); render(); toast('Image set'); }));
   $$('[data-burl]').forEach(b=>b.onclick=()=>{
     const k=b.dataset.burl;
