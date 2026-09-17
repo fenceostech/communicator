@@ -2998,6 +2998,103 @@ matchMedia('(prefers-color-scheme:dark)').addEventListener('change',()=>{paintTh
 setTheme(getTheme());
 render();
 </script>
+<script>
+/* ============================================================
+   PERSISTENCE — keep user changes across page refreshes.
+   Runs after the main script (classic scripts share globals).
+   Saves the mutable stores to localStorage and restores them on load.
+   Volatile UI (current view, in-flight run, modals, chat) is intentionally
+   not persisted so a refresh always lands on a clean, consistent screen.
+   ============================================================ */
+(function () {
+  const KEY = 'fos-state-v1';
+
+  // Set instances (S.feats, MARKS[aid]) survive JSON via a small marker.
+  const replacer = (k, v) => (v instanceof Set ? { __set: [...v] } : v);
+  const reviver = (k, v) => (v && v.__set ? new Set(v.__set) : v);
+
+  function snapshot() {
+    return {
+      S: { feats: S.feats, form: S.form, useRec: S.useRec, tech: S.tech, setTab: S.setTab },
+      SESSION, ACCOUNTS, MARKS, FIND, OVERRIDE, NOTES, noteSeq,
+      SNAPSHOTS, TEAM, PREFS, BRAND, COMM,
+    };
+  }
+
+  function save() {
+    try {
+      localStorage.setItem(KEY, JSON.stringify(snapshot(), replacer));
+    } catch (e) {
+      /* ignore quota / serialization errors — best effort */
+    }
+  }
+
+  const fillObj = (target, src) => {
+    if (!src || typeof src !== 'object') return;
+    Object.keys(target).forEach((k) => delete target[k]);
+    Object.assign(target, src);
+  };
+  const fillArr = (target, src) => {
+    if (!Array.isArray(src)) return;
+    target.length = 0;
+    src.forEach((x) => target.push(x));
+  };
+
+  function restore() {
+    let data;
+    try {
+      data = JSON.parse(localStorage.getItem(KEY) || 'null', reviver);
+    } catch (e) {
+      data = null;
+    }
+    if (!data) return;
+    if (data.S) {
+      if (data.S.feats instanceof Set) S.feats = data.S.feats;
+      if (data.S.form) S.form = data.S.form;
+      if ('useRec' in data.S) S.useRec = data.S.useRec;
+      if ('tech' in data.S) S.tech = data.S.tech;
+      if (data.S.setTab) S.setTab = data.S.setTab;
+    }
+    if (data.SESSION) fillObj(SESSION, data.SESSION);
+    if (data.ACCOUNTS) fillArr(ACCOUNTS, data.ACCOUNTS);
+    if (data.MARKS) fillObj(MARKS, data.MARKS);
+    if (data.FIND) fillObj(FIND, data.FIND);
+    if (data.OVERRIDE) fillObj(OVERRIDE, data.OVERRIDE);
+    if (data.NOTES) fillObj(NOTES, data.NOTES);
+    if (typeof data.noteSeq === 'number') noteSeq = data.noteSeq;
+    if (data.SNAPSHOTS) fillArr(SNAPSHOTS, data.SNAPSHOTS);
+    if (data.TEAM) fillArr(TEAM, data.TEAM);
+    if (data.PREFS) fillObj(PREFS, data.PREFS);
+    if (data.BRAND) fillObj(BRAND, data.BRAND);
+    if (data.COMM && data.COMM.base) COMM = data.COMM;
+  }
+
+  restore();
+
+  // Save after every render (that's where nearly all state changes land).
+  if (typeof render === 'function') {
+    const _render = render;
+    let t;
+    render = function () {
+      const out = _render.apply(this, arguments);
+      clearTimeout(t);
+      t = setTimeout(save, 250);
+      return out;
+    };
+  }
+
+  // Repaint with restored data, and flush on unload.
+  applyBrand && applyBrand();
+  render();
+  window.addEventListener('beforeunload', save);
+
+  // Escape hatch to clear persisted demo state.
+  window.fosResetState = function () {
+    try { localStorage.removeItem(KEY); } catch (e) {}
+    location.reload();
+  };
+})();
+</script>
 
 </body>
 </html>
