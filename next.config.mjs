@@ -5,6 +5,7 @@ const nextConfig = {
     return [
       { source: '/', destination: '/index.html' },
       { source: '/blueprint', destination: '/blueprint.html' },
+      { source: '/accept-invite', destination: '/accept-invite.html' },
     ]
   },
   async headers() {
