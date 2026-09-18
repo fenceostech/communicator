@@ -863,8 +863,10 @@ const S = {
 TASKS.forEach(t=>S.run.ts[t.id]='pend');
 
 const SESSION = { user:null };
+let gateMode = 'guest'; // 'guest' name prompt (default) or 'owner' email/password
 const signedIn = ()=>!!SESSION.user;
 const isOwner  = ()=>signedIn() && SESSION.user.role==='Owner';
+const isGuest  = ()=>signedIn() && !!SESSION.user.guest;
 function signIn(m){ SESSION.user=m; S.view='dashboard'; closeModal(); render(); toast('Signed in as '+m.n); }
 function signOut(){ if(window.__fosAuth){ window.__fosAuth.logout(); return; } SESSION.user=null; S.view='dashboard'; S.chatOpen=false; closeChat(); render(); }
 
@@ -875,26 +877,61 @@ function relTime(ts){ const s=Math.max(0,(Date.now()-ts)/1000); if(s<45) return 
 function logActivity(k,b,m){ ACTIVITY.unshift({k,b,m,ts:Date.now()}); if(ACTIVITY.length>60) ACTIVITY.length=60; try{ render(); }catch(e){} }
 
 function vGate(){
+  if(gateMode==='owner'){
+    return `<div class="gate">
+      <div class="gate-card">
+        <div class="logo" role="img" aria-label="fenceOS Communicator" style="margin-bottom:22px"></div>
+        <h1 style="font-size:20px">Owner / Admin sign in</h1>
+        <p class="muted" style="font-size:13.5px;margin-top:6px;max-width:44ch">Sign in with your account for full access. Your data is saved to the server and syncs across devices.</p>
+        <div class="f" style="margin-top:18px">
+          <label for="gEmail">Work email</label>
+          <input id="gEmail" type="email" placeholder="you@example.com" autocomplete="email">
+        </div>
+        <div class="f" style="margin-top:12px">
+          <label for="gPass">Password</label>
+          <input id="gPass" type="password" placeholder="&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;" autocomplete="current-password">
+        </div>
+        <div class="err" id="gErr" style="display:none">Invalid email or password.</div>
+        <button class="btn pri lg" id="gGo" style="width:100%;margin-top:14px">Sign in${ic('arrow')}</button>
+        <p class="dim" style="font-size:12px;margin-top:18px;line-height:1.5">Team member? <a href="#" id="toGuest" style="color:var(--accent);font-weight:600">Continue as a guest</a> &mdash; no account needed.</p>
+      </div>
+    </div>`;
+  }
   return `<div class="gate">
     <div class="gate-card">
       <div class="logo" role="img" aria-label="fenceOS Communicator" style="margin-bottom:22px"></div>
-      <h1 style="font-size:20px">Sign in</h1>
-      <p class="muted" style="font-size:13.5px;margin-top:6px;max-width:44ch">Sign in to your fenceOS Communicator workspace. Your data is saved to your account and syncs across devices.</p>
+      <h1 style="font-size:20px">Welcome</h1>
+      <p class="muted" style="font-size:13.5px;margin-top:6px;max-width:44ch">Enter your name to view the onboarding workspace as a guest. No account, email, or password needed.</p>
       <div class="f" style="margin-top:18px">
-        <label for="gEmail">Work email</label>
-        <input id="gEmail" type="email" placeholder="you@example.com" autocomplete="email">
+        <label for="gName">What&rsquo;s your name?</label>
+        <input id="gName" type="text" maxlength="60" placeholder="e.g. John Smith" autocomplete="name">
       </div>
-      <div class="f" style="margin-top:12px">
-        <label for="gPass">Password</label>
-        <input id="gPass" type="password" placeholder="&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;" autocomplete="current-password">
-      </div>
-      <div class="err" id="gErr" style="display:none">Invalid email or password.</div>
-      <button class="btn pri lg" id="gGo" style="width:100%;margin-top:14px">Sign in${ic('arrow')}</button>
-      <p class="dim" style="font-size:11.5px;margin-top:18px;line-height:1.5">Each person gets their own workspace, synced to the server. Ask an owner for an invite if you don&rsquo;t have an account yet.</p>
+      <div class="err" id="gErr" style="display:none">Please enter your name to continue.</div>
+      <button class="btn pri lg" id="gGuest" style="width:100%;margin-top:14px">Continue as Guest${ic('arrow')}</button>
+      <p class="dim" style="font-size:12px;margin-top:18px;line-height:1.5">Guests can view subaccounts, status, checklists, and notes, and add notes. Only the owner can make changes.</p>
+      <p class="dim" style="font-size:12px;margin-top:10px;line-height:1.5">Owner or admin? <a href="#" id="toOwner" style="color:var(--accent);font-weight:600">Sign in with email</a></p>
     </div>
   </div>`;
 }
 function bindGate(){
+  const toOwner=$('#toOwner'); if(toOwner) toOwner.onclick=(e)=>{ e.preventDefault(); gateMode='owner'; render(); };
+  const toGuest=$('#toGuest'); if(toGuest) toGuest.onclick=(e)=>{ e.preventDefault(); gateMode='guest'; render(); };
+
+  if($('#gGuest')){
+    const goGuest=async()=>{
+      const name=(($('#gName')&&$('#gName').value)||'').replace(/\s+/g,' ').trim();
+      const err=$('#gErr'), btn=$('#gGuest');
+      if(name.length<2){ if(err){err.textContent='Please enter your name to continue.';err.style.display='block';} if($('#gName')) $('#gName').focus(); return; }
+      if(btn) btn.disabled=true;
+      const res = window.__fosAuth ? await window.__fosAuth.guest(name) : {ok:false,error:'Guest access unavailable'};
+      if(!res.ok){ if(err){err.textContent=res.error||'Could not start guest session.';err.style.display='block';} if(btn) btn.disabled=false; }
+      // on success __fosAuth.guest reloads the page as the guest
+    };
+    $('#gGuest').onclick=goGuest;
+    const nm=$('#gName'); if(nm){ nm.addEventListener('keydown',e=>{ if(e.key==='Enter') goGuest(); }); nm.focus(); }
+    return;
+  }
+
   const go=async()=>{
     const email=($('#gEmail').value||'').trim();
     const password=($('#gPass')?$('#gPass').value:'')||'';
@@ -1023,12 +1060,12 @@ function render(){
 }
 function paintAuth(){
   const me=SESSION.user;
-  $('#authBtn').innerHTML = me ? `${ic('x',14)}Sign out` : `${ic('shield',14)}Sign in`;
+  $('#authBtn').innerHTML = me ? `${ic('x',14)}${me.guest?'Exit guest':'Sign out'}` : `${ic('shield',14)}Sign in`;
   $('#authBtn').onclick = me ? signOut : openSignIn;
   $('#railFoot').innerHTML = me
     ? `<div class="who"><div class="av">${me.init}</div>
-        <div style="min-width:0"><div style="font-size:12.5px;font-weight:600">${esc(me.n)}</div>
-        <div style="font-size:11px" class="dim">${esc(me.r)}</div></div></div>`
+        <div style="min-width:0"><div style="font-size:12.5px;font-weight:600">${me.guest?'Guest: ':''}${esc(me.n)}</div>
+        <div style="font-size:11px" class="dim">${me.guest?'Guest access &middot; view &amp; add notes':esc(me.r)}</div></div></div>`
     : `<button class="btn pri sm" style="width:100%" onclick="openSignIn()">${ic('shield',13)}Sign in</button>`;
   const fab=$('#fab'); if(fab) fab.style.display = signedIn()?'':'none';
   $('#chatBtn').style.display = signedIn()?'':'none';
@@ -3292,6 +3329,9 @@ render();
   }
 
   function mapUser(u) {
+    if (u.guest || u.role === 'guest') {
+      return { id: null, n: u.name, e: '', role: 'Guest', r: 'Guest', init: u.initials || 'G', guest: true, sid: u.sid || null };
+    }
     const owner = u.role === 'admin';
     return { id: u.id, n: u.name, e: u.email, role: owner ? 'Owner' : 'Specialist', r: owner ? 'Owner' : 'Specialist', init: u.initials };
   }
@@ -3341,6 +3381,18 @@ render();
         return { ok: true };
       } catch (e) { return { ok: false, error: 'Network error' }; }
     },
+    async guest(name) {
+      try {
+        const r = await fetch('/api/auth/guest', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name }),
+        });
+        const j = await r.json().catch(() => ({}));
+        if (!r.ok) return { ok: false, error: j.error || 'Could not start guest session' };
+        location.reload();               // reinitialize cleanly as the guest
+        return { ok: true };
+      } catch (e) { return { ok: false, error: 'Network error' }; }
+    },
     async logout() {
       try { await fetch('/api/auth/logout', { method: 'POST' }); } catch (e) {}
       location.reload();
@@ -3350,7 +3402,7 @@ render();
   // Boot: restore the session from the cookie, then load that user's workspace.
   (async () => {
     const u = await fetchMe();
-    if (u && u.id) { SESSION.user = mapUser(u); S.view = 'dashboard'; await hydrate(); }
+    if (u && (u.id || u.guest)) { SESSION.user = mapUser(u); S.view = 'dashboard'; await hydrate(); }
     else { SESSION.user = null; render(); }
   })();
 
