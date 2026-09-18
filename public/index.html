@@ -1135,10 +1135,9 @@ function vDash(){
     </div>
   </div>`;
 }
-const stale=a=>a.days>35 && readiness(a.id)<100 && a.block!=='none';
+const stale=a=>a.days>35 && readiness(a.id)<100 && isBlocked(a.id);
 function rowFor(a){
-  const meterCls = a.block==='agency'?'crit':readiness(a.id)===100?'ok':a.block==='client'?'warn':'';
-  const b=BLOCK[a.block];
+  const meterCls = blockClass(a.id);
   return `<tr data-acct="${a.id}" data-name="${esc((a.name+' '+a.city+' '+a.id).toLowerCase())}">
     <td><div class="biz"><div class="sq ${a.logo?'haslogo':''}">${a.logo?`<img src="${a.logo}" alt="">`:a.init}</div><div><b>${esc(a.name)}</b><small>${a.id}</small></div></div></td>
     <td class="muted" style="white-space:nowrap">${esc(a.city)}</td>
@@ -2099,6 +2098,13 @@ function blockerBanners(aid){
       <h4 style="color:var(--crit)">${ic('alert',13)} ${b.title}</h4>
       <p style="font-size:12.5px;margin-top:2px">${b.msg}</p></div>`).join('')+`</div>`;
 }
+/* Status is DERIVED from the live checklist (MARKS), never a stored a.block
+   value. A blocker only exists while its checklist item is incomplete, so it
+   auto-resolves the moment the item is completed. At 100% (and no open audit
+   findings) the subaccount is Completed with zero active blockers. */
+const isBlocked  = aid => blockersFor(aid).length > 0;
+const isComplete = aid => readiness(aid) === 100 && !openFindings(aid).length;
+const blockClass = aid => (readiness(aid) === 100 ? 'ok' : (isBlocked(aid) ? 'crit' : ''));
 
 /* readiness + pipeline stage now come from the audit */
 function readiness(id){ return Math.round(markedCount(id)/TOTAL_ITEMS*100); }
@@ -2137,7 +2143,6 @@ function vAccount(){
   const fnd = openFindings(a.id);
   const cli = clientBlocked(a.id);
   const ready = markedCount(a.id)===TOTAL_ITEMS && !fnd.length;
-  const b = BLOCK[a.block];
   S.openG = S.openG || {};
   return `
   <div style="max-width:1180px">
@@ -2163,8 +2168,11 @@ function vAccount(){
           </select>
           <span class="dim" style="font-size:10.5px">${OVERRIDE[a.id]?`Manual &middot; audit suggests <b>${STATUS[derivedStage(a.id)].l}</b>`:'Derived from the audit'}</span>
         </div>
-        ${a.block==='none'?'':`<span class="chip ${b.c}"><i class="dot"></i>Blocked on ${b.l.toLowerCase()}</span>`}
-        ${ready?'<span class="chip c-ok"><i class="dot"></i>Ready</span>':'<span class="chip c-idle">Not ready</span>'}
+        ${(()=>{ const bs=blockersFor(a.id);
+          if(ready) return '<span class="chip c-ok"><i class="dot"></i>Completed</span>';
+          if(bs.length) return `<span class="chip c-crit" title="${esc(bs.map(x=>x.msg).join(' '))}"><i class="dot"></i>Blocked &middot; ${bs.map(x=>x.type==='dns'?'DNS':'Phone #').join(', ')}</span>`;
+          return '<span class="chip c-run"><i class="dot"></i>In progress</span>';
+        })()}
       </div>
     </div>
     <div class="pad" style="padding-top:0">
@@ -2461,12 +2469,12 @@ function vAcctList(){
       <th>Findings</th><th class="hide-sm">In stage</th><th class="hide-sm">Blocker</th><th></th>
     </tr></thead><tbody id="listBody">
     ${rows.map(a=>{
-      const b=BLOCK[a.block], r=readiness(a.id), fx=openFindings(a.id).length;
+      const r=readiness(a.id), fx=openFindings(a.id).length;
       return `<tr data-acct="${a.id}" data-name="${esc((a.name+' '+a.city+' '+a.id).toLowerCase())}">
         <td><div class="biz"><div class="sq ${a.logo?'haslogo':''}">${a.logo?`<img src="${a.logo}" alt="">`:a.init}</div><div><b>${esc(a.name)}</b><small>${a.id}</small></div></div></td>
         <td class="muted" style="white-space:nowrap">${esc(a.city)}</td>
         <td>${badge(acctStage(a.id))}</td>
-        <td><div class="prog-cell"><div class="meter ${a.block==='agency'?'crit':r===100?'ok':a.block==='client'?'warn':''}"><i style="width:${r}%"></i></div><span class="num">${r}%</span></div></td>
+        <td><div class="prog-cell"><div class="meter ${blockClass(a.id)}"><i style="width:${r}%"></i></div><span class="num">${r}%</span></div></td>
         <td>${fx?`<span class="chip c-crit"><i class="dot"></i>${fx}</span>`:'<span class="chip c-ok"><i class="dot"></i>Clear</span>'}</td>
         <td class="hide-sm num ${stale(a)?'':'dim'}" style="white-space:nowrap;${stale(a)?'color:var(--crit);font-weight:600':''}">${a.days}d</td>
         <td class="hide-sm" style="font-size:12px;max-width:230px">${blockerChips(a.id)}</td>
@@ -2968,11 +2976,19 @@ const MSGS = [
   {id:2, from:'Sam Okonkwo', to:'Ryan Malaluan', at:'Today 9:05 AM', text:'Jack Fencing still has no number. Can you authorise the purchase?'}
 ];
 let msgSeq = 3;
+/* DB-backed "Ask the agent" / support messages, shared across all browsers.
+   Populated from /api/messages by the persistence layer. */
+let INBOX = [];
 const threadsFor = who => {
   const names=[...new Set(MSGS.filter(m=>m.to===who||m.from===who).map(m=>m.from===who?m.to:m.from))];
   return names.map(n=>({with:n, msgs:MSGS.filter(m=>(m.from===n&&m.to===who)||(m.from===who&&m.to===n))}));
 };
 const unreadFor = who => MSGS.filter(m=>m.to===who && !m.read).length;
+function msgBadge(me){
+  if(!me || me.guest) return 0;
+  const guest = isOwner() ? INBOX.filter(m=>m.type!=='admin').length : 0;
+  return guest + unreadFor(me.n);
+}
 
 /* ---------- agent: subaccount status only ---------- */
 function findAcct(q){
@@ -2996,14 +3012,27 @@ function agentReply(q){
   if(a) return statusAnswer(a);
   if(/(all|every|overall|summary|which|who|list|behind|stuck|blocked|worst|attention)/.test(t)){
     const rows=ACCOUNTS.map(x=>({x,p:readiness(x.id),i:incompleteOf(x.id).length})).sort((m,n)=>m.p-n.p).slice(0,5);
-    return {m:`<p>Lowest five by completion:</p><ul>${rows.map(r=>`<li><b>${esc(r.x.name)}</b> — ${r.p}%, ${r.i} outstanding${r.x.block!=='none'?` · blocked on ${BLOCK[r.x.block].l.toLowerCase()}`:''}</li>`).join('')}</ul>`,
+    return {m:`<p>Lowest five by completion:</p><ul>${rows.map(r=>`<li><b>${esc(r.x.name)}</b> — ${r.p}%, ${r.i} outstanding${blockersFor(r.x.id).length?` · blocked on ${blockersFor(r.x.id).map(x=>x.type==='dns'?'DNS':'phone #').join(', ')}`:''}</li>`).join('')}</ul>`,
       acts:[ACT('Open findings','findings',1)]};
   }
   return {m:`<p>I only answer questions about subaccount status — completion, what is outstanding, and what is blocking a build.</p>
     <p class="dim" style="font-size:12px">Try naming a subaccount, for example &ldquo;status of Bee Fencing&rdquo;, or ask which accounts are furthest behind. For anything else, use the Team tab to message a person.</p>`,acts:[]};
 }
-function ask(q){ pushMsg('u',esc(q)); setTimeout(()=>{ const r=agentReply(q);
-  pushMsg('a', r.m + (r.acts&&r.acts.length?`<div class="msg-act">${r.acts.join('')}</div>`:'')); },340); }
+function ask(q){
+  pushMsg('u',esc(q));
+  // A guest's question is also a message to the team: persist it to Supabase
+  // so it reaches the owner's inbox (from any browser/device), then confirm.
+  if(isGuest() && window.__fosMsg){
+    const a=ACCOUNTS.find(x=>x.id===S.acct);
+    window.__fosMsg.send({ accountId:a?a.id:null, accountName:a?a.name:null, body:q }).then(res=>{
+      pushMsg('a', res&&res.ok
+        ? '<p>Thanks &mdash; your message has been sent to the FenceOS team and saved to their inbox. They&rsquo;ll follow up here.</p>'
+        : '<p class="dim">Sorry, your message could not be sent. Please try again.</p>');
+    });
+  }
+  setTimeout(()=>{ const r=agentReply(q);
+    pushMsg('a', r.m + (r.acts&&r.acts.length?`<div class="msg-act">${r.acts.join('')}</div>`:'')); },340);
+}
 function pushMsg(who,html){
   S.msgs.push({who,html});
   const el=$('#msgs'); if(!el) return;
@@ -3023,7 +3052,7 @@ function paintDrawer(){
   const me=SESSION.user;
   $('#chatTabs').innerHTML = `
     <button class="dtab ${S.dtab==='agent'?'on':''}" data-dt="agent">Ask the agent</button>
-    <button class="dtab ${S.dtab==='team'?'on':''}" data-dt="team">Messages${me&&unreadFor(me.n)?` <span class="badge">${unreadFor(me.n)}</span>`:''}</button>`;
+    <button class="dtab ${S.dtab==='team'?'on':''}" data-dt="team">Messages${msgBadge(me)?` <span class="badge">${msgBadge(me)}</span>`:''}</button>`;
   $$('[data-dt]').forEach(b=>b.onclick=()=>{ S.dtab=b.dataset.dt; S.thread=null; paintDrawer(); });
   const agent = S.dtab==='agent';
   $('#chatCtx').textContent = agent ? chatCtx() : (me?`Signed in as ${me.n}`:'Not signed in');
@@ -3034,10 +3063,55 @@ function paintDrawer(){
   $('#chatInput').placeholder = agent ? 'Ask about a subaccount\u2019s status\u2026' : 'Write a message\u2026';
   if(!agent) paintTeam();
 }
+function inboxCard(m){
+  const tag = m.type==='guest'
+    ? '<span class="chip c-warn" style="font-size:10px;margin-left:6px"><i class="dot"></i>Guest</span>'
+    : (m.type==='admin' ? '' : '<span class="chip c-idle" style="font-size:10px;margin-left:6px">Team</span>');
+  return `<div style="padding:11px 15px;border-bottom:1px solid var(--line)">
+    <div style="display:flex;align-items:center;gap:4px;flex-wrap:wrap">
+      <b style="font-size:13px">${esc(m.who)}</b>${tag}
+      ${m.accountName?`<span class="dim" style="font-size:11.5px">&middot; ${esc(m.accountName)}</span>`:''}
+    </div>
+    <div style="font-size:13px;margin-top:4px;white-space:pre-wrap">${esc(m.body)}</div>
+    <time class="dim" style="font-size:11px;display:block;margin-top:4px">${esc(m.at)}</time>
+  </div>`;
+}
 function paintTeam(){
   const me=SESSION.user, el=$('#teamPane');
   if(!me){ el.innerHTML = `<div class="pad"><p class="dim" style="font-size:13px">Sign in to send and read messages.</p>
     <button class="btn pri sm" style="margin-top:10px" onclick="closeChat();openSignIn()">Sign in</button></div>`; return; }
+  // Guests: show their own messages to the team (persisted, retrievable anywhere).
+  if(me.guest){
+    const mine = INBOX.slice().sort((a,b)=>b.ts-a.ts);
+    el.innerHTML =
+      `<div class="pad" style="padding:11px 15px 6px"><span class="eyebrow">Your messages to the FenceOS team</span></div>`+
+      (mine.length ? mine.map(m=>`<div style="padding:11px 15px;border-bottom:1px solid var(--line)">
+        <div style="font-size:13px;white-space:pre-wrap">${esc(m.body)}</div>
+        ${m.accountName?`<div class="dim" style="font-size:11px;margin-top:3px">Re: ${esc(m.accountName)}</div>`:''}
+        <time class="dim" style="font-size:11px;display:block;margin-top:3px">${esc(m.at)}</time></div>`).join('')
+        : `<p class="dim" style="font-size:12.5px;padding:6px 15px 12px">You haven&rsquo;t sent any messages yet. Use &ldquo;Ask the agent&rdquo; to send one &mdash; it goes straight to the FenceOS team.</p>`);
+    return;
+  }
+  // Owner: inbox of guest/team messages (from Supabase) above the conversations.
+  if(isOwner() && !S.thread){
+    const guestMsgs = INBOX.filter(m=>m.type!=='admin').slice().sort((a,b)=>b.ts-a.ts);
+    const others=TEAM.filter(m=>m.n!==me.n);
+    const th=threadsFor(me.n);
+    el.innerHTML =
+      `<div class="pad" style="padding:11px 15px 6px"><span class="eyebrow">Guest &amp; team messages</span></div>`+
+      (guestMsgs.length ? guestMsgs.map(inboxCard).join('') : `<p class="dim" style="font-size:12.5px;padding:6px 15px 12px">No guest messages yet.</p>`)+
+      `<div class="pad" style="padding:11px 15px 6px;border-top:1px solid var(--line)"><span class="eyebrow">Conversations</span></div>`+
+      others.map(o=>{
+        const t=th.find(x=>x.with===o.n), last=t&&t.msgs[t.msgs.length-1];
+        const un=MSGS.filter(m=>m.from===o.n&&m.to===me.n&&!m.read).length;
+        return `<button class="thread" data-th="${esc(o.n)}">
+          <span class="av">${o.init}</span>
+          <span style="flex:1;min-width:0"><b>${esc(o.n)}</b>
+            <span class="sub">${last?esc(last.text).slice(0,52)+(last.text.length>52?'\u2026':''):'No messages yet'}</span></span>
+          ${un?`<span class="badge">${un}</span>`:''}</button>`;}).join('');
+    $$('[data-th]').forEach(b=>b.onclick=()=>{ S.thread=b.dataset.th; paintDrawer(); paintNav(); });
+    return;
+  }
   if(S.thread){
     const msgs=MSGS.filter(m=>(m.from===S.thread&&m.to===me.n)||(m.from===me.n&&m.to===S.thread));
     MSGS.forEach(m=>{ if(m.from===S.thread&&m.to===me.n) m.read=true; });
@@ -3252,7 +3326,8 @@ render();
       changed = true;
     }
     const notesChanged = await loadNotes();
-    if (changed || notesChanged) { applyBrand && applyBrand(); render(); }
+    const msgsChanged = await loadMessages();
+    if (changed || notesChanged || msgsChanged) { applyBrand && applyBrand(); render(); }
   }
 
   function startSync() {
@@ -3319,6 +3394,40 @@ render();
     },
   };
 
+  // ---- Ask-the-agent / support messages (shared, DB-backed) -------------
+  // Guests send messages that persist to Supabase and land in the owner's
+  // inbox. Reads are role-scoped server-side (guests see only their own).
+  const fmtMsgTime = (iso) => { try { return new Date(iso).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }); } catch (e) { return ''; } };
+  const toMsg = (m) => ({ id: m.id, accountId: m.account_id, accountName: m.account_name, body: m.body, who: m.sender_name, type: m.sender_type, sid: m.guest_sid, at: fmtMsgTime(m.created_at), ts: new Date(m.created_at).getTime() });
+  let msgSig = null;
+  async function loadMessages() {
+    try {
+      const res = await fetch('/api/messages', { cache: 'no-store' });
+      if (!res.ok) return false;
+      const j = await res.json();
+      const list = (j.messages || []).map(toMsg);
+      const sig = JSON.stringify(list.map((m) => m.id));
+      const changed = sig !== msgSig;
+      msgSig = sig;
+      INBOX.length = 0; list.forEach((m) => INBOX.push(m));
+      return changed;
+    } catch (e) { return false; }
+  }
+  window.__fosMsg = {
+    async send({ accountId, accountName, body }) {
+      try {
+        const res = await fetch('/api/messages', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ accountId, accountName, body }),
+        });
+        const j = await res.json().catch(() => ({}));
+        if (!res.ok) return { ok: false, error: j.error || 'Could not send message' };
+        if (j.message) { INBOX.push(toMsg(j.message)); msgSig = null; }
+        return { ok: true };
+      } catch (e) { return { ok: false, error: 'Network error' }; }
+    },
+  };
+
   // Saving the shared workspace is owner-only; members never write it.
   let t, ready = false;
   function scheduleSave() {
@@ -3360,6 +3469,7 @@ render();
       if (s) serverRev = s.updatedAt;    // server reachable but empty
     }
     await loadNotes();                   // notes from their own store
+    await loadMessages();                // ask-the-agent inbox / outbox
     applyBrand && applyBrand(); render();
     ready = true;
     lastSavedJSON = canon();
