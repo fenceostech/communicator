@@ -3094,12 +3094,36 @@ render();
 
   const isAdmin = () => !!(SESSION.user && SESSION.user.role === 'Owner');
 
+  // ---- Sync state -------------------------------------------------------
+  // The database (via /api/state + /api/notes) is the single source of truth.
+  // serverRev is the DB row's updated_at we last saw; lastSavedJSON is the
+  // exact payload we last persisted; dirty flags a real, not-yet-saved owner
+  // edit. localStorage is only an offline fallback, never authoritative.
+  let serverRev = null;
+  let lastSavedJSON = null;
+  let notesSig = null;
+  let dirty = false;
+  let syncTimer = null;
+  const POLL_MS = 10000;
+  const canon = () => JSON.stringify(snapshot(), replacer);
+
+  // Don't overwrite the screen from a background refetch while the user is
+  // mid-interaction (typing, a modal, or the chat panel open).
+  function busyEditing() {
+    const mr = document.getElementById('modalRoot');
+    if (mr && mr.innerHTML.trim()) return true;
+    if (S && S.chatOpen) return true;
+    const el = document.activeElement;
+    if (el && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.isContentEditable)) return true;
+    return false;
+  }
+
   // Shared workspace. Notes live separately (/api/notes) so member note-adds
   // aren't clobbered by the owner's full-state saves.
   function snapshot() {
     return {
       S: { feats: S.feats, form: S.form, useRec: S.useRec, tech: S.tech, setTab: S.setTab },
-      ACCOUNTS, MARKS, FIND, OVERRIDE, SNAPSHOTS, TEAM, PREFS, BRAND, COMM, ACTIVITY,
+      ACCOUNTS, MARKS, FIND, OVERRIDE, SNAPSHOTS, TEAM, PREFS, BRAND, COMM, ACTIVITY, GROUPS,
     };
   }
 
@@ -3112,6 +3136,8 @@ render();
       if ('tech' in data.S) S.tech = data.S.tech;
       if (data.S.setTab) S.setTab = data.S.setTab;
     }
+    // Checklist template drives TOTAL_ITEMS / readiness, so it must be shared.
+    if (Array.isArray(data.GROUPS)) { fillArr(GROUPS, data.GROUPS); if (typeof reindex === 'function') reindex(); }
     if (data.ACCOUNTS) fillArr(ACCOUNTS, data.ACCOUNTS);
     if (data.MARKS) fillObj(MARKS, data.MARKS);
     if (data.FIND) fillObj(FIND, data.FIND);
@@ -3131,14 +3157,36 @@ render();
     try { return JSON.parse(localStorage.getItem(localKey()) || 'null', reviver); } catch (e) { return null; }
   }
   async function saveServer() {
+    const payloadJSON = canon();
+    if (payloadJSON === lastSavedJSON) { dirty = false; return; } // nothing actually changed
     try {
-      const data = JSON.parse(JSON.stringify(snapshot(), replacer)); // plain JSON w/ Set markers
-      await fetch(API, {
+      const data = JSON.parse(payloadJSON); // plain JSON w/ Set markers
+      const res = await fetch(API, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ data }),
+        body: JSON.stringify({ data, baseUpdatedAt: serverRev }),
         keepalive: true,
       });
+      if (res.status === 409) {
+        // Another session saved a newer revision — adopt it instead of
+        // clobbering it, so no one silently loses a concurrent change.
+        const j = await res.json().catch(() => ({}));
+        if (j && j.data != null) {
+          apply(reviveSets(j.data));
+          serverRev = j.updatedAt || serverRev;
+          lastSavedJSON = canon();
+          dirty = false;
+          applyBrand && applyBrand(); render();
+          if (typeof toast === 'function') toast('Loaded newer changes from another session', 'info');
+        }
+        return;
+      }
+      if (res.ok) {
+        const j = await res.json().catch(() => ({}));
+        if (j && j.updatedAt) serverRev = j.updatedAt;
+        lastSavedJSON = payloadJSON;
+        dirty = false;
+      }
     } catch (e) {}
   }
   async function loadServer() {
@@ -3146,8 +3194,35 @@ render();
       const res = await fetch(API, { cache: 'no-store' });
       if (!res.ok) return null;
       const j = await res.json();
-      return j && j.data != null ? reviveSets(j.data) : null;
+      return {
+        data: j && j.data != null ? reviveSets(j.data) : null,
+        updatedAt: j ? (j.updatedAt || null) : null,
+      };
     } catch (e) { return null; }
+  }
+
+  // Pull the latest shared state + notes and repaint if anything changed.
+  // Runs on load, on focus/visibility, and on a short poll so every browser
+  // converges on the database without a manual refresh.
+  async function refetchShared() {
+    if (dirty || busyEditing()) return;
+    let changed = false;
+    const s = await loadServer();
+    if (s && s.updatedAt && s.updatedAt !== serverRev) {
+      if (s.data) apply(s.data);
+      serverRev = s.updatedAt;
+      lastSavedJSON = canon();
+      changed = true;
+    }
+    const notesChanged = await loadNotes();
+    if (changed || notesChanged) { applyBrand && applyBrand(); render(); }
+  }
+
+  function startSync() {
+    if (syncTimer) return;
+    syncTimer = setInterval(() => { refetchShared(); }, POLL_MS);
+    document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') refetchShared(); });
+    window.addEventListener('focus', () => { refetchShared(); });
   }
 
   const fmtNoteDate = (iso) => { try { return new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }); } catch (e) { return ''; } };
@@ -3155,10 +3230,14 @@ render();
   async function loadNotes() {
     try {
       const res = await fetch('/api/notes', { cache: 'no-store' });
-      if (!res.ok) return;
+      if (!res.ok) return false;
       const j = await res.json();
+      const list = j.notes || [];
+      const sig = JSON.stringify(list.map((n) => [n.id, n.text, n.account_id]));
+      const changed = sig !== notesSig;
+      notesSig = sig;
       const by = {};
-      (j.notes || []).forEach((n) => {
+      list.forEach((n) => {
         (by[n.account_id] = by[n.account_id] || []).push({ id: n.id, text: n.text, who: n.author, at: fmtNoteDate(n.created_at), ts: new Date(n.created_at).getTime() });
       });
       Object.keys(NOTES).forEach((k) => delete NOTES[k]);
@@ -3168,7 +3247,8 @@ render();
         NOTES[a.id] = seed.concat(by[a.id] || []);
       });
       Object.keys(by).forEach((k) => { if (!NOTES[k]) NOTES[k] = by[k]; });
-    } catch (e) {}
+      return changed;
+    } catch (e) { return false; }
   }
 
   // Notes API — add is allowed for everyone; edit/delete require owner (server-enforced).
@@ -3206,6 +3286,7 @@ render();
   let t, ready = false;
   function scheduleSave() {
     if (!ready || !isAdmin()) return;
+    dirty = true;                 // a real edit is pending; saveServer clears it (or no-ops if unchanged)
     clearTimeout(t);
     t = setTimeout(() => { saveLocal(); saveServer(); }, 500);
   }
@@ -3228,14 +3309,23 @@ render();
 
   async function hydrate() {
     uid = SESSION.user.id;
-    apply(loadLocal());                  // instant cache
-    applyBrand && applyBrand(); render();
-    const data = await loadServer();     // shared workspace (read-only for members)
-    if (data) apply(data);
+    // Database first: the server is the source of truth. localStorage is only
+    // used when the server has no data yet or is unreachable (offline).
+    const s = await loadServer();        // shared workspace (read-only for members)
+    if (s && s.data) {
+      apply(s.data);
+      serverRev = s.updatedAt;
+    } else {
+      apply(loadLocal());                // offline / empty-server fallback
+      if (s) serverRev = s.updatedAt;    // server reachable but empty
+    }
     await loadNotes();                   // notes from their own store
     applyBrand && applyBrand(); render();
     ready = true;
-    if (isAdmin()) { saveLocal(); if (!data) saveServer(); }  // owner seeds/persists
+    lastSavedJSON = canon();
+    // If the server has nothing yet, the owner seeds it from local state.
+    if (isAdmin() && (!s || s.data == null)) { saveLocal(); dirty = true; saveServer(); }
+    startSync();                         // focus/visibility + poll keeps browsers in sync
   }
 
   window.__fosAuth = {
@@ -3264,7 +3354,7 @@ render();
     else { SESSION.user = null; render(); }
   })();
 
-  window.addEventListener('beforeunload', () => { if (ready && isAdmin()) { saveLocal(); saveServer(); } });
+  window.addEventListener('beforeunload', () => { if (ready && isAdmin() && dirty) { saveLocal(); saveServer(); } });
 
   window.fosResetState = function () {
     try { localStorage.removeItem(localKey()); } catch (e) {}
