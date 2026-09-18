@@ -3223,7 +3223,9 @@ render();
   function busyEditing() {
     const mr = document.getElementById('modalRoot');
     if (mr && mr.innerHTML.trim()) return true;
-    if (S && S.chatOpen) return true;
+    // Note: an open chat drawer is intentionally NOT "busy" — the owner needs
+    // background refetch to keep pulling in new guest messages while it's open.
+    // Active typing (below) still pauses a repaint so input isn't disturbed.
     const el = document.activeElement;
     if (el && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.isContentEditable)) return true;
     return false;
