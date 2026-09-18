@@ -1130,8 +1130,6 @@ function vDash(){
   const n = ACCOUNTS.length;
   const clear = ACCOUNTS.filter(a=>!openFindings(a.id).length).length;
   const issues = ACCOUNTS.reduce((m,a)=>m+openFindings(a.id).filter(f=>f.v!=='client').length,0);
-  const cli  = ACCOUNTS.filter(a=>clientBlocked(a.id).length).length;
-  const miss = ACCOUNTS.reduce((m,a)=>m+openFindings(a.id).filter(f=>f.v==='missing').length,0);
   const tile=(v,l,s2,i,cls,extra)=>`<div class="tile ${cls||''}">
     <div class="top"><div class="ic" style="background:var(--${i.bg});color:var(--${i.fg})">${ic(i.n,13)}</div><div class="eyebrow">${l}</div></div>
     <div class="val">${v}</div><div class="sub">${s2}</div>${extra||''}</div>`;
@@ -1142,9 +1140,6 @@ function vDash(){
     ${tile(n,'Total subaccounts','Across the FenceOS agency',{n:'layers',bg:'accent-soft',fg:'accent'},'',
       `<div class="spark">${[3,4,2,5,4,6,5,7].map(h=>`<i style="height:${h*3}px"></i>`).join('')}</div>`)}
     ${tile(clear,'Audited clear','No open findings',{n:'check',bg:'ok-soft',fg:'ok'})}
-    ${tile(miss,'Missing information','Fields empty in Communicator',{n:'srch',bg:'crit-soft',fg:'crit'},'attn')}
-    ${tile(cli,'Waiting on client','Information or access we cannot get',{n:'hand',bg:'hand-soft',fg:'hand'},'',
-      `<div class="dim" style="font-size:11px">Longest wait: 41 days &mdash; Harbor Point Fence</div>`)}
     ${tile(ACCOUNTS.reduce((m,a)=>m+(TOTAL_ITEMS-markedCount(a.id)),0),'Incomplete items','Unticked across every checklist',{n:'list',bg:'warn-soft',fg:'warn'})}
   </div>
   <div class="grid-2">
