@@ -1122,7 +1122,7 @@ function vDash(){
       <table class="tbl"><thead><tr>
         <th>Business</th><th>Owner</th><th>Pipeline stage</th><th>Readiness</th>
         <th class="hide-sm">Blocker</th><th></th>
-      </tr></thead><tbody id="acctBody">${ACCOUNTS.map(rowFor).join('')}</tbody></table>
+      </tr></thead><tbody id="acctBody">${byCompletionAsc().map(rowFor).join('')}</tbody></table>
       </div>
     </div>
     <div class="card">
@@ -2105,6 +2105,10 @@ function blockerBanners(aid){
 const isBlocked  = aid => blockersFor(aid).length > 0;
 const isComplete = aid => readiness(aid) === 100 && !openFindings(aid).length;
 const blockClass = aid => (readiness(aid) === 100 ? 'ok' : (isBlocked(aid) ? 'crit' : ''));
+// Dashboard order: least-complete first (new/incomplete accounts on top),
+// so 100% accounts sink to the bottom. Percentage is computed from the live
+// checklist; ties break by name for a stable, deterministic order.
+const byCompletionAsc = () => ACCOUNTS.slice().sort((a,b)=> readiness(a.id)-readiness(b.id) || String(a.name).localeCompare(String(b.name)));
 
 /* readiness + pipeline stage now come from the audit */
 function readiness(id){ return Math.round(markedCount(id)/TOTAL_ITEMS*100); }
@@ -3313,6 +3317,17 @@ render();
       };
     } catch (e) { return null; }
   }
+  // Retry the initial read a few times so a transient failure (cold start,
+  // brief 5xx) does NOT make us fall back to the built-in seed data and — for
+  // an owner session — re-seed the server, which would revert real data.
+  async function loadServerWithRetry(tries) {
+    for (let i = 0; i < tries; i++) {
+      const s = await loadServer();
+      if (s) return s;                 // reachable (has data or is genuinely empty)
+      await new Promise((r) => setTimeout(r, 400 * (i + 1)));
+    }
+    return null;                       // truly unreachable
+  }
 
   // Pull the latest shared state + notes and repaint if anything changed.
   // Runs on load, on focus/visibility, and on a short poll so every browser
@@ -3462,12 +3477,12 @@ render();
     uid = SESSION.user.id;
     // Database first: the server is the source of truth. localStorage is only
     // used when the server has no data yet or is unreachable (offline).
-    const s = await loadServer();        // shared workspace (read-only for members)
+    const s = await loadServerWithRetry(3);   // shared workspace (read-only for members)
     if (s && s.data) {
       apply(s.data);
       serverRev = s.updatedAt;
     } else {
-      apply(loadLocal());                // offline / empty-server fallback
+      apply(loadLocal());                // offline / empty-server fallback (display only)
       if (s) serverRev = s.updatedAt;    // server reachable but empty
     }
     await loadNotes();                   // notes from their own store
@@ -3475,8 +3490,12 @@ render();
     applyBrand && applyBrand(); render();
     ready = true;
     lastSavedJSON = canon();
-    // If the server has nothing yet, the owner seeds it from local state.
-    if (isAdmin() && (!s || s.data == null)) { saveLocal(); dirty = true; saveServer(); }
+    // Seed the shared workspace ONLY when the server is reachable AND genuinely
+    // empty (first run). NEVER write on a failed/unreachable load: a browser
+    // with no cached data (e.g. an AI agent's fresh browser) would otherwise
+    // overwrite the real database with the built-in seed accounts — the cause
+    // of data "reverting" when another browser opens the app.
+    if (isAdmin() && s && s.data == null) { saveLocal(); dirty = true; saveServer(); }
     startSync();                         // focus/visibility + poll keeps browsers in sync
   }
 
