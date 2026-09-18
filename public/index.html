@@ -1094,6 +1094,21 @@ function paintAuth(){
   $('#crumb').style.display = signedIn()?'':'none';
   document.querySelector('.app').style.gridTemplateColumns = signedIn()?'':'1fr';
 }
+/* Sticky Update bar: shown only to the owner while there are pending edits.
+   Clicking Update commits to Supabase, verifies, and repaints from the DB. */
+function paintSaveBar(){
+  const show = isOwner() && window.__fosSave && window.__fosSave.dirty();
+  let bar = document.getElementById('saveBar');
+  if(!show){ if(bar) bar.remove(); return; }
+  if(!bar){ bar=document.createElement('div'); bar.id='saveBar'; document.body.appendChild(bar); }
+  const busy = window.__fosSave.saving();
+  bar.setAttribute('style','position:fixed;left:50%;transform:translateX(-50%);bottom:18px;z-index:120;display:flex;align-items:center;gap:10px;background:var(--panel);border:1px solid var(--line-2);box-shadow:var(--shadow);border-radius:12px;padding:9px 10px 9px 15px;max-width:calc(100vw - 24px)');
+  bar.innerHTML = `<span style="font-size:13px;font-weight:600;display:flex;align-items:center;gap:7px;color:var(--warn)">${ic('alert',15)}<span>Unsaved changes</span></span>
+    <button class="btn sm" id="sbDiscard" ${busy?'disabled':''}>Discard</button>
+    <button class="btn sm pri" id="sbUpdate" ${busy?'disabled':''} style="min-width:100px;justify-content:center">${busy?'Updating&hellip;':'Update'+ic('arrow',13)}</button>`;
+  const u=document.getElementById('sbUpdate'); if(u) u.onclick=()=>window.__fosSave.commit();
+  const d=document.getElementById('sbDiscard'); if(d) d.onclick=()=>window.__fosSave.discard();
+}
 function topActions(){
   if(S.view==='dashboard' && !signedIn()) return '';
   if(S.view==='dashboard') return isOwner()?`<button class="btn pri" onclick="startWizard()">${ic('plus')}<span class="hide-sm">Create New FenceOS Subaccount</span></button>`:'';
@@ -3233,15 +3248,19 @@ render();
   // ---- Sync state -------------------------------------------------------
   // The database (via /api/state + /api/notes) is the single source of truth.
   // serverRev is the DB row's updated_at we last saw; lastSavedJSON is the
-  // exact payload we last persisted; dirty flags a real, not-yet-saved owner
-  // edit. localStorage is only an offline fallback, never authoritative.
+  // exact payload we last persisted. Edits are NOT auto-saved — they stay
+  // pending (unsaved()) until the owner clicks Update, which commits them and
+  // re-reads the DB. localStorage is only an offline fallback, never authoritative.
   let serverRev = null;
   let lastSavedJSON = null;
   let notesSig = null;
-  let dirty = false;
+  let saving = false;
   let syncTimer = null;
   const POLL_MS = 10000;
   const canon = () => JSON.stringify(snapshot(), replacer);
+  // Unsaved owner edits exist when the current snapshot differs from what we
+  // last persisted. Members/guests can't edit shared state, so never unsaved.
+  const unsaved = () => ready && isAdmin() && canon() !== lastSavedJSON;
 
   // Don't overwrite the screen from a background refetch while the user is
   // mid-interaction (typing, a modal, or the chat panel open).
@@ -3294,38 +3313,30 @@ render();
   function loadLocal() {
     try { return JSON.parse(localStorage.getItem(localKey()) || 'null', reviver); } catch (e) { return null; }
   }
+  // Persist the current snapshot. Returns a result object; the caller (commit)
+  // decides what to apply, so an in-flight save can't silently clobber the UI.
   async function saveServer() {
     const payloadJSON = canon();
-    if (payloadJSON === lastSavedJSON) { dirty = false; return; } // nothing actually changed
+    if (payloadJSON === lastSavedJSON) return { ok: true, noop: true };
     try {
       const data = JSON.parse(payloadJSON); // plain JSON w/ Set markers
       const res = await fetch(API, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ data, baseUpdatedAt: serverRev }),
-        keepalive: true,
       });
       if (res.status === 409) {
-        // Another session saved a newer revision — adopt it instead of
-        // clobbering it, so no one silently loses a concurrent change.
+        // Someone else saved a newer revision since we loaded (optimistic lock).
         const j = await res.json().catch(() => ({}));
-        if (j && j.data != null) {
-          apply(reviveSets(j.data));
-          serverRev = j.updatedAt || serverRev;
-          lastSavedJSON = canon();
-          dirty = false;
-          applyBrand && applyBrand(); render();
-          if (typeof toast === 'function') toast('Loaded newer changes from another session', 'info');
-        }
-        return;
+        return { ok: false, conflict: true, data: (j && j.data != null) ? reviveSets(j.data) : null, updatedAt: j && j.updatedAt };
       }
       if (res.ok) {
         const j = await res.json().catch(() => ({}));
-        if (j && j.updatedAt) serverRev = j.updatedAt;
-        lastSavedJSON = payloadJSON;
-        dirty = false;
+        return { ok: true, updatedAt: j && j.updatedAt, savedJSON: payloadJSON };
       }
-    } catch (e) {}
+      const j = await res.json().catch(() => ({}));
+      return { ok: false, error: (j && j.error) || ('Save failed (HTTP ' + res.status + ')') };
+    } catch (e) { return { ok: false, error: 'Network error — please try again.' }; }
   }
   async function loadServer() {
     try {
@@ -3354,7 +3365,8 @@ render();
   // Runs on load, on focus/visibility, and on a short poll so every browser
   // converges on the database without a manual refresh.
   async function refetchShared() {
-    if (dirty || busyEditing()) return;
+    // Never overwrite pending (un-Updated) owner edits or an in-flight save.
+    if (saving || unsaved() || busyEditing()) return;
     let changed = false;
     const s = await loadServer();
     if (s && s.updatedAt && s.updatedAt !== serverRev) {
@@ -3467,13 +3479,55 @@ render();
   };
 
   // Saving the shared workspace is owner-only; members never write it.
-  let t, ready = false;
-  function scheduleSave() {
-    if (!ready || !isAdmin()) return;
-    dirty = true;                 // a real edit is pending; saveServer clears it (or no-ops if unchanged)
-    clearTimeout(t);
-    t = setTimeout(() => { saveLocal(); saveServer(); }, 500);
-  }
+  // Edits are committed explicitly via the Update button (window.__fosSave),
+  // never auto-saved.
+  let ready = false;
+
+  // Explicit Update flow: commit pending edits, verify by re-reading the DB,
+  // then repaint from the saved record so the UI can never revert afterwards.
+  window.__fosSave = {
+    dirty() { return unsaved(); },
+    saving() { return saving; },
+    async commit() {
+      if (saving || !unsaved()) return;
+      saving = true; render();                       // disable button, show "Updating…"
+      const res = await saveServer();
+      if (res.ok) {
+        // Verify: re-read the authoritative record and paint from it.
+        const s = await loadServerWithRetry(3);
+        if (s && s.data) { apply(s.data); serverRev = s.updatedAt; }
+        else if (res.updatedAt) { serverRev = res.updatedAt; }
+        lastSavedJSON = canon();
+        saving = false;
+        await loadNotes(); await loadMessages();
+        applyBrand && applyBrand(); render();
+        if (typeof toast === 'function') toast('Changes saved');
+      } else if (res.conflict) {
+        // Newer data exists — reload it rather than overwrite; user re-applies.
+        if (res.data) { apply(res.data); serverRev = res.updatedAt || serverRev; }
+        else { const s = await loadServer(); if (s && s.data) { apply(s.data); serverRev = s.updatedAt; } }
+        lastSavedJSON = canon();
+        saving = false;
+        applyBrand && applyBrand(); render();
+        if (typeof toast === 'function') toast('This subaccount changed in another session — reloaded the latest. Re-apply and Update again.', 'bad');
+      } else {
+        // Failed: keep the pending edits, report honestly, allow retry.
+        saving = false; render();
+        if (typeof toast === 'function') toast(res.error || 'Unable to save changes. Please try again.', 'bad');
+      }
+    },
+    async discard() {
+      if (saving) return;
+      saving = true; render();
+      const s = await loadServerWithRetry(3);
+      if (s && s.data) { apply(s.data); serverRev = s.updatedAt; }
+      lastSavedJSON = canon();
+      saving = false;
+      await loadNotes(); await loadMessages();
+      applyBrand && applyBrand(); render();
+      if (typeof toast === 'function') toast('Changes discarded');
+    },
+  };
 
   function mapUser(u) {
     if (u.guest || u.role === 'guest') {
@@ -3483,10 +3537,10 @@ render();
     return { id: u.id, n: u.name, e: u.email, role: owner ? 'Owner' : 'Specialist', r: owner ? 'Owner' : 'Specialist', init: u.initials };
   }
 
-  // Persist on every change (no-ops until signed in + initial load complete).
+  // Repaint the Update bar after every render so it reflects pending edits.
   if (typeof render === 'function') {
     const _render = render;
-    render = function () { const out = _render.apply(this, arguments); scheduleSave(); return out; };
+    render = function () { const out = _render.apply(this, arguments); if (typeof paintSaveBar === 'function') paintSaveBar(); return out; };
   }
 
   async function fetchMe() {
@@ -3516,7 +3570,11 @@ render();
     // with no cached data (e.g. an AI agent's fresh browser) would otherwise
     // overwrite the real database with the built-in seed accounts — the cause
     // of data "reverting" when another browser opens the app.
-    if (isAdmin() && s && s.data == null) { saveLocal(); dirty = true; saveServer(); }
+    if (isAdmin() && s && s.data == null) {
+      const r = await saveServer();      // first-run seed of an empty DB (not a user edit)
+      if (r.ok && r.updatedAt) serverRev = r.updatedAt;
+      lastSavedJSON = canon();
+    }
     startSync();                         // focus/visibility + poll keeps browsers in sync
   }
 
@@ -3558,7 +3616,8 @@ render();
     else { SESSION.user = null; render(); }
   })();
 
-  window.addEventListener('beforeunload', () => { if (ready && isAdmin() && dirty) { saveLocal(); saveServer(); } });
+  // No auto-save: warn before leaving if there are pending (un-Updated) edits.
+  window.addEventListener('beforeunload', (e) => { if (unsaved()) { e.preventDefault(); e.returnValue = ''; } });
 
   window.fosResetState = function () {
     try { localStorage.removeItem(localKey()); } catch (e) {}
