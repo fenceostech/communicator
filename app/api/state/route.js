@@ -34,14 +34,31 @@ export async function PUT(request) {
   if (data == null || typeof data !== 'object') {
     return Response.json({ error: 'data object required' }, { status: 400 })
   }
+  const baseUpdatedAt = body.baseUpdatedAt || null
   try {
-    await pool.query(
+    // Optimistic concurrency. If the caller based its edit on an older
+    // revision than what's stored, reject with the current data so the
+    // client can reconcile instead of silently overwriting a newer change.
+    if (baseUpdatedAt) {
+      const cur = await pool.query('SELECT data, updated_at FROM app_state WHERE key = $1', [KEY])
+      if (
+        cur.rows.length &&
+        new Date(cur.rows[0].updated_at).getTime() !== new Date(baseUpdatedAt).getTime()
+      ) {
+        return Response.json(
+          { conflict: true, data: cur.rows[0].data, updatedAt: cur.rows[0].updated_at },
+          { status: 409 }
+        )
+      }
+    }
+    const { rows } = await pool.query(
       `INSERT INTO app_state (key, data, updated_at)
        VALUES ($1, $2::jsonb, now())
-       ON CONFLICT (key) DO UPDATE SET data = EXCLUDED.data, updated_at = now()`,
+       ON CONFLICT (key) DO UPDATE SET data = EXCLUDED.data, updated_at = now()
+       RETURNING updated_at`,
       [KEY, JSON.stringify(data)]
     )
-    return Response.json({ ok: true })
+    return Response.json({ ok: true, updatedAt: rows[0].updated_at })
   } catch (e) {
     return Response.json({ error: 'state unavailable' }, { status: 503 })
   }

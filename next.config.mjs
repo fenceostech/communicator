@@ -9,6 +9,7 @@ const nextConfig = {
     ]
   },
   async headers() {
+    const noStore = { key: 'Cache-Control', value: 'no-store, must-revalidate' }
     return [
       {
         source: '/:path*',
@@ -17,6 +18,14 @@ const nextConfig = {
           { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
         ],
       },
+      // Always revalidate the app shell so every browser (including an agent's)
+      // loads the current code + fetches live data, never a stale cached page.
+      { source: '/', headers: [noStore] },
+      { source: '/index.html', headers: [noStore] },
+      { source: '/blueprint', headers: [noStore] },
+      { source: '/blueprint.html', headers: [noStore] },
+      { source: '/accept-invite', headers: [noStore] },
+      { source: '/accept-invite.html', headers: [noStore] },
     ]
   },
 }

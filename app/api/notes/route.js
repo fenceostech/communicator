@@ -43,6 +43,12 @@ export async function POST(request) {
        RETURNING id, account_id, text, author, created_at`,
       [accountId, text, author, Number.isInteger(user.uid) ? user.uid : null]
     )
+    // Keep the guest's audit row fresh so the owner sees recent activity.
+    if (user.guest && user.sid) {
+      try {
+        await pool.query('UPDATE guest_sessions SET last_seen_at = now() WHERE sid = $1', [user.sid])
+      } catch (e) {}
+    }
     return Response.json({ ok: true, note: rows[0] })
   } catch (e) {
     return Response.json({ error: 'unavailable' }, { status: 503 })

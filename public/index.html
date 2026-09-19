@@ -3,15 +3,36 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="robots" content="noindex">
-<meta name="description" content="Clickable UI/UX prototype for the FenceOS AI Setup Agent.">
+<title>FenceOS Onboarding Status — Client Setup Tracker</title>
+<meta name="description" content="Track FenceOS client onboarding in one place: setup checklists, subaccount status, DNS, phone and A2P progress, blockers, and team notes.">
+<meta name="robots" content="noindex, nofollow">
+<meta name="theme-color" content="#0284C7">
+<link rel="canonical" href="https://fenceos.integratorssolutions.com/">
+
+<!-- Open Graph (Facebook, LinkedIn, Slack, iMessage) -->
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="FenceOS">
+<meta property="og:title" content="FenceOS Onboarding Status — Client Setup Tracker">
+<meta property="og:description" content="See current FenceOS onboarding status for every client subaccount — checklists, setup progress, DNS/phone/A2P, blockers, and shared notes.">
+<meta property="og:url" content="https://fenceos.integratorssolutions.com/">
+<meta property="og:image" content="https://fenceos.integratorssolutions.com/og-image.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="FenceOS Onboarding Status — client setup tracker dashboard">
+<meta property="og:locale" content="en_US">
+
+<!-- Twitter / X -->
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="FenceOS Onboarding Status — Client Setup Tracker">
+<meta name="twitter:description" content="See current FenceOS onboarding status for every client subaccount — checklists, setup progress, DNS/phone/A2P, blockers, and shared notes.">
+<meta name="twitter:image" content="https://fenceos.integratorssolutions.com/og-image.png">
+<meta name="twitter:image:alt" content="FenceOS Onboarding Status — client setup tracker dashboard">
 <style>
 html{color-scheme:light dark}
 body{margin:0}
 img{max-width:100%}
 [hidden]{display:none!important}
 </style>
-<title>FenceOS Setup Console</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
@@ -863,8 +884,10 @@ const S = {
 TASKS.forEach(t=>S.run.ts[t.id]='pend');
 
 const SESSION = { user:null };
+let gateMode = 'guest'; // 'guest' name prompt (default) or 'owner' email/password
 const signedIn = ()=>!!SESSION.user;
 const isOwner  = ()=>signedIn() && SESSION.user.role==='Owner';
+const isGuest  = ()=>signedIn() && !!SESSION.user.guest;
 function signIn(m){ SESSION.user=m; S.view='dashboard'; closeModal(); render(); toast('Signed in as '+m.n); }
 function signOut(){ if(window.__fosAuth){ window.__fosAuth.logout(); return; } SESSION.user=null; S.view='dashboard'; S.chatOpen=false; closeChat(); render(); }
 
@@ -875,26 +898,61 @@ function relTime(ts){ const s=Math.max(0,(Date.now()-ts)/1000); if(s<45) return 
 function logActivity(k,b,m){ ACTIVITY.unshift({k,b,m,ts:Date.now()}); if(ACTIVITY.length>60) ACTIVITY.length=60; try{ render(); }catch(e){} }
 
 function vGate(){
+  if(gateMode==='owner'){
+    return `<div class="gate">
+      <div class="gate-card">
+        <div class="logo" role="img" aria-label="fenceOS Communicator" style="margin-bottom:22px"></div>
+        <h1 style="font-size:20px">Owner / Admin sign in</h1>
+        <p class="muted" style="font-size:13.5px;margin-top:6px;max-width:44ch">Sign in with your account for full access. Your data is saved to the server and syncs across devices.</p>
+        <div class="f" style="margin-top:18px">
+          <label for="gEmail">Work email</label>
+          <input id="gEmail" type="email" placeholder="you@example.com" autocomplete="email">
+        </div>
+        <div class="f" style="margin-top:12px">
+          <label for="gPass">Password</label>
+          <input id="gPass" type="password" placeholder="&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;" autocomplete="current-password">
+        </div>
+        <div class="err" id="gErr" style="display:none">Invalid email or password.</div>
+        <button class="btn pri lg" id="gGo" style="width:100%;margin-top:14px">Sign in${ic('arrow')}</button>
+        <p class="dim" style="font-size:12px;margin-top:18px;line-height:1.5">Team member? <a href="#" id="toGuest" style="color:var(--accent);font-weight:600">Continue as a guest</a> &mdash; no account needed.</p>
+      </div>
+    </div>`;
+  }
   return `<div class="gate">
     <div class="gate-card">
       <div class="logo" role="img" aria-label="fenceOS Communicator" style="margin-bottom:22px"></div>
-      <h1 style="font-size:20px">Sign in</h1>
-      <p class="muted" style="font-size:13.5px;margin-top:6px;max-width:44ch">Sign in to your fenceOS Communicator workspace. Your data is saved to your account and syncs across devices.</p>
+      <h1 style="font-size:20px">Welcome</h1>
+      <p class="muted" style="font-size:13.5px;margin-top:6px;max-width:44ch">Enter your name to view the onboarding workspace as a guest. No account, email, or password needed.</p>
       <div class="f" style="margin-top:18px">
-        <label for="gEmail">Work email</label>
-        <input id="gEmail" type="email" placeholder="you@example.com" autocomplete="email">
+        <label for="gName">What&rsquo;s your name?</label>
+        <input id="gName" type="text" maxlength="60" placeholder="e.g. John Smith" autocomplete="name">
       </div>
-      <div class="f" style="margin-top:12px">
-        <label for="gPass">Password</label>
-        <input id="gPass" type="password" placeholder="&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;" autocomplete="current-password">
-      </div>
-      <div class="err" id="gErr" style="display:none">Invalid email or password.</div>
-      <button class="btn pri lg" id="gGo" style="width:100%;margin-top:14px">Sign in${ic('arrow')}</button>
-      <p class="dim" style="font-size:11.5px;margin-top:18px;line-height:1.5">Each person gets their own workspace, synced to the server. Ask an owner for an invite if you don&rsquo;t have an account yet.</p>
+      <div class="err" id="gErr" style="display:none">Please enter your name to continue.</div>
+      <button class="btn pri lg" id="gGuest" style="width:100%;margin-top:14px">Continue as Guest${ic('arrow')}</button>
+      <p class="dim" style="font-size:12px;margin-top:18px;line-height:1.5">Guests can view subaccounts, status, checklists, and notes, and add notes. Only the owner can make changes.</p>
+      <p class="dim" style="font-size:12px;margin-top:10px;line-height:1.5">Owner or admin? <a href="#" id="toOwner" style="color:var(--accent);font-weight:600">Sign in with email</a></p>
     </div>
   </div>`;
 }
 function bindGate(){
+  const toOwner=$('#toOwner'); if(toOwner) toOwner.onclick=(e)=>{ e.preventDefault(); gateMode='owner'; render(); };
+  const toGuest=$('#toGuest'); if(toGuest) toGuest.onclick=(e)=>{ e.preventDefault(); gateMode='guest'; render(); };
+
+  if($('#gGuest')){
+    const goGuest=async()=>{
+      const name=(($('#gName')&&$('#gName').value)||'').replace(/\s+/g,' ').trim();
+      const err=$('#gErr'), btn=$('#gGuest');
+      if(name.length<2){ if(err){err.textContent='Please enter your name to continue.';err.style.display='block';} if($('#gName')) $('#gName').focus(); return; }
+      if(btn) btn.disabled=true;
+      const res = window.__fosAuth ? await window.__fosAuth.guest(name) : {ok:false,error:'Guest access unavailable'};
+      if(!res.ok){ if(err){err.textContent=res.error||'Could not start guest session.';err.style.display='block';} if(btn) btn.disabled=false; }
+      // on success __fosAuth.guest reloads the page as the guest
+    };
+    $('#gGuest').onclick=goGuest;
+    const nm=$('#gName'); if(nm){ nm.addEventListener('keydown',e=>{ if(e.key==='Enter') goGuest(); }); nm.focus(); }
+    return;
+  }
+
   const go=async()=>{
     const email=($('#gEmail').value||'').trim();
     const password=($('#gPass')?$('#gPass').value:'')||'';
@@ -1023,18 +1081,33 @@ function render(){
 }
 function paintAuth(){
   const me=SESSION.user;
-  $('#authBtn').innerHTML = me ? `${ic('x',14)}Sign out` : `${ic('shield',14)}Sign in`;
+  $('#authBtn').innerHTML = me ? `${ic('x',14)}${me.guest?'Exit guest':'Sign out'}` : `${ic('shield',14)}Sign in`;
   $('#authBtn').onclick = me ? signOut : openSignIn;
   $('#railFoot').innerHTML = me
     ? `<div class="who"><div class="av">${me.init}</div>
-        <div style="min-width:0"><div style="font-size:12.5px;font-weight:600">${esc(me.n)}</div>
-        <div style="font-size:11px" class="dim">${esc(me.r)}</div></div></div>`
+        <div style="min-width:0"><div style="font-size:12.5px;font-weight:600">${me.guest?'Guest: ':''}${esc(me.n)}</div>
+        <div style="font-size:11px" class="dim">${me.guest?'Guest access &middot; view &amp; add notes':esc(me.r)}</div></div></div>`
     : `<button class="btn pri sm" style="width:100%" onclick="openSignIn()">${ic('shield',13)}Sign in</button>`;
   const fab=$('#fab'); if(fab) fab.style.display = signedIn()?'':'none';
   $('#chatBtn').style.display = signedIn()?'':'none';
   $('#rail').style.display = signedIn()?'':'none';
   $('#crumb').style.display = signedIn()?'':'none';
   document.querySelector('.app').style.gridTemplateColumns = signedIn()?'':'1fr';
+}
+/* Sticky Update bar: shown only to the owner while there are pending edits.
+   Clicking Update commits to Supabase, verifies, and repaints from the DB. */
+function paintSaveBar(){
+  const show = isOwner() && window.__fosSave && window.__fosSave.dirty();
+  let bar = document.getElementById('saveBar');
+  if(!show){ if(bar) bar.remove(); return; }
+  if(!bar){ bar=document.createElement('div'); bar.id='saveBar'; document.body.appendChild(bar); }
+  const busy = window.__fosSave.saving();
+  bar.setAttribute('style','position:fixed;left:50%;transform:translateX(-50%);bottom:18px;z-index:120;display:flex;align-items:center;gap:10px;background:var(--panel);border:1px solid var(--line-2);box-shadow:var(--shadow);border-radius:12px;padding:9px 10px 9px 15px;max-width:calc(100vw - 24px)');
+  bar.innerHTML = `<span style="font-size:13px;font-weight:600;display:flex;align-items:center;gap:7px;color:var(--warn)">${ic('alert',15)}<span>Unsaved changes</span></span>
+    <button class="btn sm" id="sbDiscard" ${busy?'disabled':''}>Discard</button>
+    <button class="btn sm pri" id="sbUpdate" ${busy?'disabled':''} style="min-width:100px;justify-content:center">${busy?'Updating&hellip;':'Update'+ic('arrow',13)}</button>`;
+  const u=document.getElementById('sbUpdate'); if(u) u.onclick=()=>window.__fosSave.commit();
+  const d=document.getElementById('sbDiscard'); if(d) d.onclick=()=>window.__fosSave.discard();
 }
 function topActions(){
   if(S.view==='dashboard' && !signedIn()) return '';
@@ -1057,8 +1130,6 @@ function vDash(){
   const n = ACCOUNTS.length;
   const clear = ACCOUNTS.filter(a=>!openFindings(a.id).length).length;
   const issues = ACCOUNTS.reduce((m,a)=>m+openFindings(a.id).filter(f=>f.v!=='client').length,0);
-  const cli  = ACCOUNTS.filter(a=>clientBlocked(a.id).length).length;
-  const miss = ACCOUNTS.reduce((m,a)=>m+openFindings(a.id).filter(f=>f.v==='missing').length,0);
   const tile=(v,l,s2,i,cls,extra)=>`<div class="tile ${cls||''}">
     <div class="top"><div class="ic" style="background:var(--${i.bg});color:var(--${i.fg})">${ic(i.n,13)}</div><div class="eyebrow">${l}</div></div>
     <div class="val">${v}</div><div class="sub">${s2}</div>${extra||''}</div>`;
@@ -1069,9 +1140,6 @@ function vDash(){
     ${tile(n,'Total subaccounts','Across the FenceOS agency',{n:'layers',bg:'accent-soft',fg:'accent'},'',
       `<div class="spark">${[3,4,2,5,4,6,5,7].map(h=>`<i style="height:${h*3}px"></i>`).join('')}</div>`)}
     ${tile(clear,'Audited clear','No open findings',{n:'check',bg:'ok-soft',fg:'ok'})}
-    ${tile(miss,'Missing information','Fields empty in Communicator',{n:'srch',bg:'crit-soft',fg:'crit'},'attn')}
-    ${tile(cli,'Waiting on client','Information or access we cannot get',{n:'hand',bg:'hand-soft',fg:'hand'},'',
-      `<div class="dim" style="font-size:11px">Longest wait: 41 days &mdash; Harbor Point Fence</div>`)}
     ${tile(ACCOUNTS.reduce((m,a)=>m+(TOTAL_ITEMS-markedCount(a.id)),0),'Incomplete items','Unticked across every checklist',{n:'list',bg:'warn-soft',fg:'warn'})}
   </div>
   <div class="grid-2">
@@ -1085,7 +1153,7 @@ function vDash(){
       <table class="tbl"><thead><tr>
         <th>Business</th><th>Owner</th><th>Pipeline stage</th><th>Readiness</th>
         <th class="hide-sm">Blocker</th><th></th>
-      </tr></thead><tbody id="acctBody">${ACCOUNTS.map(rowFor).join('')}</tbody></table>
+      </tr></thead><tbody id="acctBody">${byCompletionAsc().map(rowFor).join('')}</tbody></table>
       </div>
     </div>
     <div class="card">
@@ -1098,10 +1166,9 @@ function vDash(){
     </div>
   </div>`;
 }
-const stale=a=>a.days>35 && readiness(a.id)<100 && a.block!=='none';
+const stale=a=>a.days>35 && readiness(a.id)<100 && isBlocked(a.id);
 function rowFor(a){
-  const meterCls = a.block==='agency'?'crit':readiness(a.id)===100?'ok':a.block==='client'?'warn':'';
-  const b=BLOCK[a.block];
+  const meterCls = blockClass(a.id);
   return `<tr data-acct="${a.id}" data-name="${esc((a.name+' '+a.city+' '+a.id).toLowerCase())}">
     <td><div class="biz"><div class="sq ${a.logo?'haslogo':''}">${a.logo?`<img src="${a.logo}" alt="">`:a.init}</div><div><b>${esc(a.name)}</b><small>${a.id}</small></div></div></td>
     <td class="muted" style="white-space:nowrap">${esc(a.city)}</td>
@@ -2062,6 +2129,17 @@ function blockerBanners(aid){
       <h4 style="color:var(--crit)">${ic('alert',13)} ${b.title}</h4>
       <p style="font-size:12.5px;margin-top:2px">${b.msg}</p></div>`).join('')+`</div>`;
 }
+/* Status is DERIVED from the live checklist (MARKS), never a stored a.block
+   value. A blocker only exists while its checklist item is incomplete, so it
+   auto-resolves the moment the item is completed. At 100% (and no open audit
+   findings) the subaccount is Completed with zero active blockers. */
+const isBlocked  = aid => blockersFor(aid).length > 0;
+const isComplete = aid => readiness(aid) === 100 && !openFindings(aid).length;
+const blockClass = aid => (readiness(aid) === 100 ? 'ok' : (isBlocked(aid) ? 'crit' : ''));
+// Dashboard order: least-complete first (new/incomplete accounts on top),
+// so 100% accounts sink to the bottom. Percentage is computed from the live
+// checklist; ties break by name for a stable, deterministic order.
+const byCompletionAsc = () => ACCOUNTS.slice().sort((a,b)=> readiness(a.id)-readiness(b.id) || String(a.name).localeCompare(String(b.name)));
 
 /* readiness + pipeline stage now come from the audit */
 function readiness(id){ return Math.round(markedCount(id)/TOTAL_ITEMS*100); }
@@ -2100,7 +2178,6 @@ function vAccount(){
   const fnd = openFindings(a.id);
   const cli = clientBlocked(a.id);
   const ready = markedCount(a.id)===TOTAL_ITEMS && !fnd.length;
-  const b = BLOCK[a.block];
   S.openG = S.openG || {};
   return `
   <div style="max-width:1180px">
@@ -2126,8 +2203,11 @@ function vAccount(){
           </select>
           <span class="dim" style="font-size:10.5px">${OVERRIDE[a.id]?`Manual &middot; audit suggests <b>${STATUS[derivedStage(a.id)].l}</b>`:'Derived from the audit'}</span>
         </div>
-        ${a.block==='none'?'':`<span class="chip ${b.c}"><i class="dot"></i>Blocked on ${b.l.toLowerCase()}</span>`}
-        ${ready?'<span class="chip c-ok"><i class="dot"></i>Ready</span>':'<span class="chip c-idle">Not ready</span>'}
+        ${(()=>{ const bs=blockersFor(a.id);
+          if(ready) return '<span class="chip c-ok"><i class="dot"></i>Completed</span>';
+          if(bs.length) return `<span class="chip c-crit" title="${esc(bs.map(x=>x.msg).join(' '))}"><i class="dot"></i>Blocked &middot; ${bs.map(x=>x.type==='dns'?'DNS':'Phone #').join(', ')}</span>`;
+          return '<span class="chip c-run"><i class="dot"></i>In progress</span>';
+        })()}
       </div>
     </div>
     <div class="pad" style="padding-top:0">
@@ -2424,12 +2504,12 @@ function vAcctList(){
       <th>Findings</th><th class="hide-sm">In stage</th><th class="hide-sm">Blocker</th><th></th>
     </tr></thead><tbody id="listBody">
     ${rows.map(a=>{
-      const b=BLOCK[a.block], r=readiness(a.id), fx=openFindings(a.id).length;
+      const r=readiness(a.id), fx=openFindings(a.id).length;
       return `<tr data-acct="${a.id}" data-name="${esc((a.name+' '+a.city+' '+a.id).toLowerCase())}">
         <td><div class="biz"><div class="sq ${a.logo?'haslogo':''}">${a.logo?`<img src="${a.logo}" alt="">`:a.init}</div><div><b>${esc(a.name)}</b><small>${a.id}</small></div></div></td>
         <td class="muted" style="white-space:nowrap">${esc(a.city)}</td>
         <td>${badge(acctStage(a.id))}</td>
-        <td><div class="prog-cell"><div class="meter ${a.block==='agency'?'crit':r===100?'ok':a.block==='client'?'warn':''}"><i style="width:${r}%"></i></div><span class="num">${r}%</span></div></td>
+        <td><div class="prog-cell"><div class="meter ${blockClass(a.id)}"><i style="width:${r}%"></i></div><span class="num">${r}%</span></div></td>
         <td>${fx?`<span class="chip c-crit"><i class="dot"></i>${fx}</span>`:'<span class="chip c-ok"><i class="dot"></i>Clear</span>'}</td>
         <td class="hide-sm num ${stale(a)?'':'dim'}" style="white-space:nowrap;${stale(a)?'color:var(--crit);font-weight:600':''}">${a.days}d</td>
         <td class="hide-sm" style="font-size:12px;max-width:230px">${blockerChips(a.id)}</td>
@@ -2931,11 +3011,19 @@ const MSGS = [
   {id:2, from:'Sam Okonkwo', to:'Ryan Malaluan', at:'Today 9:05 AM', text:'Jack Fencing still has no number. Can you authorise the purchase?'}
 ];
 let msgSeq = 3;
+/* DB-backed "Ask the agent" / support messages, shared across all browsers.
+   Populated from /api/messages by the persistence layer. */
+let INBOX = [];
 const threadsFor = who => {
   const names=[...new Set(MSGS.filter(m=>m.to===who||m.from===who).map(m=>m.from===who?m.to:m.from))];
   return names.map(n=>({with:n, msgs:MSGS.filter(m=>(m.from===n&&m.to===who)||(m.from===who&&m.to===n))}));
 };
 const unreadFor = who => MSGS.filter(m=>m.to===who && !m.read).length;
+function msgBadge(me){
+  if(!me || me.guest) return 0;
+  const guest = isOwner() ? INBOX.filter(m=>m.type!=='admin').length : 0;
+  return guest + unreadFor(me.n);
+}
 
 /* ---------- agent: subaccount status only ---------- */
 function findAcct(q){
@@ -2959,14 +3047,27 @@ function agentReply(q){
   if(a) return statusAnswer(a);
   if(/(all|every|overall|summary|which|who|list|behind|stuck|blocked|worst|attention)/.test(t)){
     const rows=ACCOUNTS.map(x=>({x,p:readiness(x.id),i:incompleteOf(x.id).length})).sort((m,n)=>m.p-n.p).slice(0,5);
-    return {m:`<p>Lowest five by completion:</p><ul>${rows.map(r=>`<li><b>${esc(r.x.name)}</b> — ${r.p}%, ${r.i} outstanding${r.x.block!=='none'?` · blocked on ${BLOCK[r.x.block].l.toLowerCase()}`:''}</li>`).join('')}</ul>`,
+    return {m:`<p>Lowest five by completion:</p><ul>${rows.map(r=>`<li><b>${esc(r.x.name)}</b> — ${r.p}%, ${r.i} outstanding${blockersFor(r.x.id).length?` · blocked on ${blockersFor(r.x.id).map(x=>x.type==='dns'?'DNS':'phone #').join(', ')}`:''}</li>`).join('')}</ul>`,
       acts:[ACT('Open findings','findings',1)]};
   }
   return {m:`<p>I only answer questions about subaccount status — completion, what is outstanding, and what is blocking a build.</p>
     <p class="dim" style="font-size:12px">Try naming a subaccount, for example &ldquo;status of Bee Fencing&rdquo;, or ask which accounts are furthest behind. For anything else, use the Team tab to message a person.</p>`,acts:[]};
 }
-function ask(q){ pushMsg('u',esc(q)); setTimeout(()=>{ const r=agentReply(q);
-  pushMsg('a', r.m + (r.acts&&r.acts.length?`<div class="msg-act">${r.acts.join('')}</div>`:'')); },340); }
+function ask(q){
+  pushMsg('u',esc(q));
+  // A guest's question is also a message to the team: persist it to Supabase
+  // so it reaches the owner's inbox (from any browser/device), then confirm.
+  if(isGuest() && window.__fosMsg){
+    const a=ACCOUNTS.find(x=>x.id===S.acct);
+    window.__fosMsg.send({ accountId:a?a.id:null, accountName:a?a.name:null, body:q }).then(res=>{
+      pushMsg('a', res&&res.ok
+        ? '<p>Thanks &mdash; your message has been sent to the FenceOS team and saved to their inbox. They&rsquo;ll follow up here.</p>'
+        : '<p class="dim">Sorry, your message could not be sent. Please try again.</p>');
+    });
+  }
+  setTimeout(()=>{ const r=agentReply(q);
+    pushMsg('a', r.m + (r.acts&&r.acts.length?`<div class="msg-act">${r.acts.join('')}</div>`:'')); },340);
+}
 function pushMsg(who,html){
   S.msgs.push({who,html});
   const el=$('#msgs'); if(!el) return;
@@ -2986,7 +3087,7 @@ function paintDrawer(){
   const me=SESSION.user;
   $('#chatTabs').innerHTML = `
     <button class="dtab ${S.dtab==='agent'?'on':''}" data-dt="agent">Ask the agent</button>
-    <button class="dtab ${S.dtab==='team'?'on':''}" data-dt="team">Messages${me&&unreadFor(me.n)?` <span class="badge">${unreadFor(me.n)}</span>`:''}</button>`;
+    <button class="dtab ${S.dtab==='team'?'on':''}" data-dt="team">Messages${msgBadge(me)?` <span class="badge">${msgBadge(me)}</span>`:''}</button>`;
   $$('[data-dt]').forEach(b=>b.onclick=()=>{ S.dtab=b.dataset.dt; S.thread=null; paintDrawer(); });
   const agent = S.dtab==='agent';
   $('#chatCtx').textContent = agent ? chatCtx() : (me?`Signed in as ${me.n}`:'Not signed in');
@@ -2997,10 +3098,55 @@ function paintDrawer(){
   $('#chatInput').placeholder = agent ? 'Ask about a subaccount\u2019s status\u2026' : 'Write a message\u2026';
   if(!agent) paintTeam();
 }
+function inboxCard(m){
+  const tag = m.type==='guest'
+    ? '<span class="chip c-warn" style="font-size:10px;margin-left:6px"><i class="dot"></i>Guest</span>'
+    : (m.type==='admin' ? '' : '<span class="chip c-idle" style="font-size:10px;margin-left:6px">Team</span>');
+  return `<div style="padding:11px 15px;border-bottom:1px solid var(--line)">
+    <div style="display:flex;align-items:center;gap:4px;flex-wrap:wrap">
+      <b style="font-size:13px">${esc(m.who)}</b>${tag}
+      ${m.accountName?`<span class="dim" style="font-size:11.5px">&middot; ${esc(m.accountName)}</span>`:''}
+    </div>
+    <div style="font-size:13px;margin-top:4px;white-space:pre-wrap">${esc(m.body)}</div>
+    <time class="dim" style="font-size:11px;display:block;margin-top:4px">${esc(m.at)}</time>
+  </div>`;
+}
 function paintTeam(){
   const me=SESSION.user, el=$('#teamPane');
   if(!me){ el.innerHTML = `<div class="pad"><p class="dim" style="font-size:13px">Sign in to send and read messages.</p>
     <button class="btn pri sm" style="margin-top:10px" onclick="closeChat();openSignIn()">Sign in</button></div>`; return; }
+  // Guests: show their own messages to the team (persisted, retrievable anywhere).
+  if(me.guest){
+    const mine = INBOX.slice().sort((a,b)=>b.ts-a.ts);
+    el.innerHTML =
+      `<div class="pad" style="padding:11px 15px 6px"><span class="eyebrow">Your messages to the FenceOS team</span></div>`+
+      (mine.length ? mine.map(m=>`<div style="padding:11px 15px;border-bottom:1px solid var(--line)">
+        <div style="font-size:13px;white-space:pre-wrap">${esc(m.body)}</div>
+        ${m.accountName?`<div class="dim" style="font-size:11px;margin-top:3px">Re: ${esc(m.accountName)}</div>`:''}
+        <time class="dim" style="font-size:11px;display:block;margin-top:3px">${esc(m.at)}</time></div>`).join('')
+        : `<p class="dim" style="font-size:12.5px;padding:6px 15px 12px">You haven&rsquo;t sent any messages yet. Use &ldquo;Ask the agent&rdquo; to send one &mdash; it goes straight to the FenceOS team.</p>`);
+    return;
+  }
+  // Owner: inbox of guest/team messages (from Supabase) above the conversations.
+  if(isOwner() && !S.thread){
+    const guestMsgs = INBOX.filter(m=>m.type!=='admin').slice().sort((a,b)=>b.ts-a.ts);
+    const others=TEAM.filter(m=>m.n!==me.n);
+    const th=threadsFor(me.n);
+    el.innerHTML =
+      `<div class="pad" style="padding:11px 15px 6px"><span class="eyebrow">Guest &amp; team messages</span></div>`+
+      (guestMsgs.length ? guestMsgs.map(inboxCard).join('') : `<p class="dim" style="font-size:12.5px;padding:6px 15px 12px">No guest messages yet.</p>`)+
+      `<div class="pad" style="padding:11px 15px 6px;border-top:1px solid var(--line)"><span class="eyebrow">Conversations</span></div>`+
+      others.map(o=>{
+        const t=th.find(x=>x.with===o.n), last=t&&t.msgs[t.msgs.length-1];
+        const un=MSGS.filter(m=>m.from===o.n&&m.to===me.n&&!m.read).length;
+        return `<button class="thread" data-th="${esc(o.n)}">
+          <span class="av">${o.init}</span>
+          <span style="flex:1;min-width:0"><b>${esc(o.n)}</b>
+            <span class="sub">${last?esc(last.text).slice(0,52)+(last.text.length>52?'\u2026':''):'No messages yet'}</span></span>
+          ${un?`<span class="badge">${un}</span>`:''}</button>`;}).join('');
+    $$('[data-th]').forEach(b=>b.onclick=()=>{ S.thread=b.dataset.th; paintDrawer(); paintNav(); });
+    return;
+  }
   if(S.thread){
     const msgs=MSGS.filter(m=>(m.from===S.thread&&m.to===me.n)||(m.from===me.n&&m.to===S.thread));
     MSGS.forEach(m=>{ if(m.from===S.thread&&m.to===me.n) m.read=true; });
@@ -3094,12 +3240,42 @@ render();
 
   const isAdmin = () => !!(SESSION.user && SESSION.user.role === 'Owner');
 
+  // ---- Sync state -------------------------------------------------------
+  // The database (via /api/state + /api/notes) is the single source of truth.
+  // serverRev is the DB row's updated_at we last saw; lastSavedJSON is the
+  // exact payload we last persisted. Edits are NOT auto-saved — they stay
+  // pending (unsaved()) until the owner clicks Update, which commits them and
+  // re-reads the DB. localStorage is only an offline fallback, never authoritative.
+  let serverRev = null;
+  let lastSavedJSON = null;
+  let notesSig = null;
+  let saving = false;
+  let syncTimer = null;
+  const POLL_MS = 10000;
+  const canon = () => JSON.stringify(snapshot(), replacer);
+  // Unsaved owner edits exist when the current snapshot differs from what we
+  // last persisted. Members/guests can't edit shared state, so never unsaved.
+  const unsaved = () => ready && isAdmin() && canon() !== lastSavedJSON;
+
+  // Don't overwrite the screen from a background refetch while the user is
+  // mid-interaction (typing, a modal, or the chat panel open).
+  function busyEditing() {
+    const mr = document.getElementById('modalRoot');
+    if (mr && mr.innerHTML.trim()) return true;
+    // Note: an open chat drawer is intentionally NOT "busy" — the owner needs
+    // background refetch to keep pulling in new guest messages while it's open.
+    // Active typing (below) still pauses a repaint so input isn't disturbed.
+    const el = document.activeElement;
+    if (el && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.isContentEditable)) return true;
+    return false;
+  }
+
   // Shared workspace. Notes live separately (/api/notes) so member note-adds
   // aren't clobbered by the owner's full-state saves.
   function snapshot() {
     return {
       S: { feats: S.feats, form: S.form, useRec: S.useRec, tech: S.tech, setTab: S.setTab },
-      ACCOUNTS, MARKS, FIND, OVERRIDE, SNAPSHOTS, TEAM, PREFS, BRAND, COMM, ACTIVITY,
+      ACCOUNTS, MARKS, FIND, OVERRIDE, SNAPSHOTS, TEAM, PREFS, BRAND, COMM, ACTIVITY, GROUPS,
     };
   }
 
@@ -3112,6 +3288,8 @@ render();
       if ('tech' in data.S) S.tech = data.S.tech;
       if (data.S.setTab) S.setTab = data.S.setTab;
     }
+    // Checklist template drives TOTAL_ITEMS / readiness, so it must be shared.
+    if (Array.isArray(data.GROUPS)) { fillArr(GROUPS, data.GROUPS); if (typeof reindex === 'function') reindex(); }
     if (data.ACCOUNTS) fillArr(ACCOUNTS, data.ACCOUNTS);
     if (data.MARKS) fillObj(MARKS, data.MARKS);
     if (data.FIND) fillObj(FIND, data.FIND);
@@ -3130,24 +3308,78 @@ render();
   function loadLocal() {
     try { return JSON.parse(localStorage.getItem(localKey()) || 'null', reviver); } catch (e) { return null; }
   }
+  // Persist the current snapshot. Returns a result object; the caller (commit)
+  // decides what to apply, so an in-flight save can't silently clobber the UI.
   async function saveServer() {
+    const payloadJSON = canon();
+    if (payloadJSON === lastSavedJSON) return { ok: true, noop: true };
     try {
-      const data = JSON.parse(JSON.stringify(snapshot(), replacer)); // plain JSON w/ Set markers
-      await fetch(API, {
+      const data = JSON.parse(payloadJSON); // plain JSON w/ Set markers
+      const res = await fetch(API, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ data }),
-        keepalive: true,
+        body: JSON.stringify({ data, baseUpdatedAt: serverRev }),
       });
-    } catch (e) {}
+      if (res.status === 409) {
+        // Someone else saved a newer revision since we loaded (optimistic lock).
+        const j = await res.json().catch(() => ({}));
+        return { ok: false, conflict: true, data: (j && j.data != null) ? reviveSets(j.data) : null, updatedAt: j && j.updatedAt };
+      }
+      if (res.ok) {
+        const j = await res.json().catch(() => ({}));
+        return { ok: true, updatedAt: j && j.updatedAt, savedJSON: payloadJSON };
+      }
+      const j = await res.json().catch(() => ({}));
+      return { ok: false, error: (j && j.error) || ('Save failed (HTTP ' + res.status + ')') };
+    } catch (e) { return { ok: false, error: 'Network error — please try again.' }; }
   }
   async function loadServer() {
     try {
       const res = await fetch(API, { cache: 'no-store' });
       if (!res.ok) return null;
       const j = await res.json();
-      return j && j.data != null ? reviveSets(j.data) : null;
+      return {
+        data: j && j.data != null ? reviveSets(j.data) : null,
+        updatedAt: j ? (j.updatedAt || null) : null,
+      };
     } catch (e) { return null; }
+  }
+  // Retry the initial read a few times so a transient failure (cold start,
+  // brief 5xx) does NOT make us fall back to the built-in seed data and — for
+  // an owner session — re-seed the server, which would revert real data.
+  async function loadServerWithRetry(tries) {
+    for (let i = 0; i < tries; i++) {
+      const s = await loadServer();
+      if (s) return s;                 // reachable (has data or is genuinely empty)
+      await new Promise((r) => setTimeout(r, 400 * (i + 1)));
+    }
+    return null;                       // truly unreachable
+  }
+
+  // Pull the latest shared state + notes and repaint if anything changed.
+  // Runs on load, on focus/visibility, and on a short poll so every browser
+  // converges on the database without a manual refresh.
+  async function refetchShared() {
+    // Never overwrite pending (un-Updated) owner edits or an in-flight save.
+    if (saving || unsaved() || busyEditing()) return;
+    let changed = false;
+    const s = await loadServer();
+    if (s && s.updatedAt && s.updatedAt !== serverRev) {
+      if (s.data) apply(s.data);
+      serverRev = s.updatedAt;
+      lastSavedJSON = canon();
+      changed = true;
+    }
+    const notesChanged = await loadNotes();
+    const msgsChanged = await loadMessages();
+    if (changed || notesChanged || msgsChanged) { applyBrand && applyBrand(); render(); }
+  }
+
+  function startSync() {
+    if (syncTimer) return;
+    syncTimer = setInterval(() => { refetchShared(); }, POLL_MS);
+    document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') refetchShared(); });
+    window.addEventListener('focus', () => { refetchShared(); });
   }
 
   const fmtNoteDate = (iso) => { try { return new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }); } catch (e) { return ''; } };
@@ -3155,10 +3387,14 @@ render();
   async function loadNotes() {
     try {
       const res = await fetch('/api/notes', { cache: 'no-store' });
-      if (!res.ok) return;
+      if (!res.ok) return false;
       const j = await res.json();
+      const list = j.notes || [];
+      const sig = JSON.stringify(list.map((n) => [n.id, n.text, n.account_id]));
+      const changed = sig !== notesSig;
+      notesSig = sig;
       const by = {};
-      (j.notes || []).forEach((n) => {
+      list.forEach((n) => {
         (by[n.account_id] = by[n.account_id] || []).push({ id: n.id, text: n.text, who: n.author, at: fmtNoteDate(n.created_at), ts: new Date(n.created_at).getTime() });
       });
       Object.keys(NOTES).forEach((k) => delete NOTES[k]);
@@ -3168,7 +3404,8 @@ render();
         NOTES[a.id] = seed.concat(by[a.id] || []);
       });
       Object.keys(by).forEach((k) => { if (!NOTES[k]) NOTES[k] = by[k]; });
-    } catch (e) {}
+      return changed;
+    } catch (e) { return false; }
   }
 
   // Notes API — add is allowed for everyone; edit/delete require owner (server-enforced).
@@ -3202,23 +3439,103 @@ render();
     },
   };
 
-  // Saving the shared workspace is owner-only; members never write it.
-  let t, ready = false;
-  function scheduleSave() {
-    if (!ready || !isAdmin()) return;
-    clearTimeout(t);
-    t = setTimeout(() => { saveLocal(); saveServer(); }, 500);
+  // ---- Ask-the-agent / support messages (shared, DB-backed) -------------
+  // Guests send messages that persist to Supabase and land in the owner's
+  // inbox. Reads are role-scoped server-side (guests see only their own).
+  const fmtMsgTime = (iso) => { try { return new Date(iso).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }); } catch (e) { return ''; } };
+  const toMsg = (m) => ({ id: m.id, accountId: m.account_id, accountName: m.account_name, body: m.body, who: m.sender_name, type: m.sender_type, sid: m.guest_sid, at: fmtMsgTime(m.created_at), ts: new Date(m.created_at).getTime() });
+  let msgSig = null;
+  async function loadMessages() {
+    try {
+      const res = await fetch('/api/messages', { cache: 'no-store' });
+      if (!res.ok) return false;
+      const j = await res.json();
+      const list = (j.messages || []).map(toMsg);
+      const sig = JSON.stringify(list.map((m) => m.id));
+      const changed = sig !== msgSig;
+      msgSig = sig;
+      INBOX.length = 0; list.forEach((m) => INBOX.push(m));
+      return changed;
+    } catch (e) { return false; }
   }
+  window.__fosMsg = {
+    async send({ accountId, accountName, body }) {
+      try {
+        const res = await fetch('/api/messages', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ accountId, accountName, body }),
+        });
+        const j = await res.json().catch(() => ({}));
+        if (!res.ok) return { ok: false, error: j.error || 'Could not send message' };
+        if (j.message) { INBOX.push(toMsg(j.message)); msgSig = null; }
+        return { ok: true };
+      } catch (e) { return { ok: false, error: 'Network error' }; }
+    },
+  };
+
+  // Saving the shared workspace is owner-only; members never write it.
+  // Edits are committed explicitly via the Update button (window.__fosSave),
+  // never auto-saved.
+  let ready = false;
+
+  // Explicit Update flow: commit pending edits, verify by re-reading the DB,
+  // then repaint from the saved record so the UI can never revert afterwards.
+  window.__fosSave = {
+    dirty() { return unsaved(); },
+    saving() { return saving; },
+    async commit() {
+      if (saving || !unsaved()) return;
+      saving = true; render();                       // disable button, show "Updating…"
+      const res = await saveServer();
+      if (res.ok) {
+        // Verify: re-read the authoritative record and paint from it.
+        const s = await loadServerWithRetry(3);
+        if (s && s.data) { apply(s.data); serverRev = s.updatedAt; }
+        else if (res.updatedAt) { serverRev = res.updatedAt; }
+        lastSavedJSON = canon();
+        saving = false;
+        await loadNotes(); await loadMessages();
+        applyBrand && applyBrand(); render();
+        if (typeof toast === 'function') toast('Changes saved');
+      } else if (res.conflict) {
+        // Newer data exists — reload it rather than overwrite; user re-applies.
+        if (res.data) { apply(res.data); serverRev = res.updatedAt || serverRev; }
+        else { const s = await loadServer(); if (s && s.data) { apply(s.data); serverRev = s.updatedAt; } }
+        lastSavedJSON = canon();
+        saving = false;
+        applyBrand && applyBrand(); render();
+        if (typeof toast === 'function') toast('This subaccount changed in another session — reloaded the latest. Re-apply and Update again.', 'bad');
+      } else {
+        // Failed: keep the pending edits, report honestly, allow retry.
+        saving = false; render();
+        if (typeof toast === 'function') toast(res.error || 'Unable to save changes. Please try again.', 'bad');
+      }
+    },
+    async discard() {
+      if (saving) return;
+      saving = true; render();
+      const s = await loadServerWithRetry(3);
+      if (s && s.data) { apply(s.data); serverRev = s.updatedAt; }
+      lastSavedJSON = canon();
+      saving = false;
+      await loadNotes(); await loadMessages();
+      applyBrand && applyBrand(); render();
+      if (typeof toast === 'function') toast('Changes discarded');
+    },
+  };
 
   function mapUser(u) {
+    if (u.guest || u.role === 'guest') {
+      return { id: null, n: u.name, e: '', role: 'Guest', r: 'Guest', init: u.initials || 'G', guest: true, sid: u.sid || null };
+    }
     const owner = u.role === 'admin';
     return { id: u.id, n: u.name, e: u.email, role: owner ? 'Owner' : 'Specialist', r: owner ? 'Owner' : 'Specialist', init: u.initials };
   }
 
-  // Persist on every change (no-ops until signed in + initial load complete).
+  // Repaint the Update bar after every render so it reflects pending edits.
   if (typeof render === 'function') {
     const _render = render;
-    render = function () { const out = _render.apply(this, arguments); scheduleSave(); return out; };
+    render = function () { const out = _render.apply(this, arguments); if (typeof paintSaveBar === 'function') paintSaveBar(); return out; };
   }
 
   async function fetchMe() {
@@ -3228,14 +3545,32 @@ render();
 
   async function hydrate() {
     uid = SESSION.user.id;
-    apply(loadLocal());                  // instant cache
-    applyBrand && applyBrand(); render();
-    const data = await loadServer();     // shared workspace (read-only for members)
-    if (data) apply(data);
+    // Database first: the server is the source of truth. localStorage is only
+    // used when the server has no data yet or is unreachable (offline).
+    const s = await loadServerWithRetry(3);   // shared workspace (read-only for members)
+    if (s && s.data) {
+      apply(s.data);
+      serverRev = s.updatedAt;
+    } else {
+      apply(loadLocal());                // offline / empty-server fallback (display only)
+      if (s) serverRev = s.updatedAt;    // server reachable but empty
+    }
     await loadNotes();                   // notes from their own store
+    await loadMessages();                // ask-the-agent inbox / outbox
     applyBrand && applyBrand(); render();
     ready = true;
-    if (isAdmin()) { saveLocal(); if (!data) saveServer(); }  // owner seeds/persists
+    lastSavedJSON = canon();
+    // Seed the shared workspace ONLY when the server is reachable AND genuinely
+    // empty (first run). NEVER write on a failed/unreachable load: a browser
+    // with no cached data (e.g. an AI agent's fresh browser) would otherwise
+    // overwrite the real database with the built-in seed accounts — the cause
+    // of data "reverting" when another browser opens the app.
+    if (isAdmin() && s && s.data == null) {
+      const r = await saveServer();      // first-run seed of an empty DB (not a user edit)
+      if (r.ok && r.updatedAt) serverRev = r.updatedAt;
+      lastSavedJSON = canon();
+    }
+    startSync();                         // focus/visibility + poll keeps browsers in sync
   }
 
   window.__fosAuth = {
@@ -3251,6 +3586,18 @@ render();
         return { ok: true };
       } catch (e) { return { ok: false, error: 'Network error' }; }
     },
+    async guest(name) {
+      try {
+        const r = await fetch('/api/auth/guest', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name }),
+        });
+        const j = await r.json().catch(() => ({}));
+        if (!r.ok) return { ok: false, error: j.error || 'Could not start guest session' };
+        location.reload();               // reinitialize cleanly as the guest
+        return { ok: true };
+      } catch (e) { return { ok: false, error: 'Network error' }; }
+    },
     async logout() {
       try { await fetch('/api/auth/logout', { method: 'POST' }); } catch (e) {}
       location.reload();
@@ -3260,11 +3607,12 @@ render();
   // Boot: restore the session from the cookie, then load that user's workspace.
   (async () => {
     const u = await fetchMe();
-    if (u && u.id) { SESSION.user = mapUser(u); S.view = 'dashboard'; await hydrate(); }
+    if (u && (u.id || u.guest)) { SESSION.user = mapUser(u); S.view = 'dashboard'; await hydrate(); }
     else { SESSION.user = null; render(); }
   })();
 
-  window.addEventListener('beforeunload', () => { if (ready && isAdmin()) { saveLocal(); saveServer(); } });
+  // No auto-save: warn before leaving if there are pending (un-Updated) edits.
+  window.addEventListener('beforeunload', (e) => { if (unsaved()) { e.preventDefault(); e.returnValue = ''; } });
 
   window.fosResetState = function () {
     try { localStorage.removeItem(localKey()); } catch (e) {}

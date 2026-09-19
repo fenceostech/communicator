@@ -118,7 +118,42 @@ try {
     console.log('[migrate] skipping demo users (set SEED_USERS_PASSWORD to create them)')
   }
 
+  // Ensure the primary owner/admin account on EVERY deploy so login access is
+  // never lost. Driven by OWNER_EMAIL + OWNER_PASSWORD (set once in the host
+  // env, e.g. Vercel). Idempotent: creates the account if missing and always
+  // (re)sets the password + admin role so the owner can always sign in.
+  const ownerEmail = (process.env.OWNER_EMAIL || '').trim().toLowerCase()
+  const ownerPassword = process.env.OWNER_PASSWORD || ''
+  if (ownerEmail && ownerPassword) {
+    const ownerName = process.env.OWNER_NAME || 'Integrators Solutions'
+    const ownerInitials =
+      ownerName.split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0]).join('').toUpperCase() || 'OW'
+    const res = await pool.query(
+      `INSERT INTO app_users (name, email, password_hash, role, initials)
+       VALUES ($1, $2, $3, 'admin', $4)
+       ON CONFLICT (email)
+       DO UPDATE SET password_hash = EXCLUDED.password_hash, role = 'admin'
+       RETURNING (xmax = 0) AS created`,
+      [ownerName, ownerEmail, hashPassword(ownerPassword), ownerInitials]
+    )
+    console.log(
+      `[migrate] ensured owner admin ${ownerEmail} (${res.rows[0].created ? 'created' : 'password reset'})`
+    )
+  } else {
+    console.log('[migrate] OWNER_EMAIL/OWNER_PASSWORD not set — skipping owner-admin ensure')
+  }
+
   console.log('[migrate] done')
+} catch (err) {
+  // On a Vercel build, never break the deploy over a transient DB error;
+  // log it and continue so the app still ships. Elsewhere, fail loudly.
+  const optional = process.env.VERCEL === '1' || process.env.MIGRATE_OPTIONAL === '1'
+  console.error('[migrate] error:', err && err.message ? err.message : err)
+  if (!optional) {
+    await pool.end().catch(() => {})
+    process.exit(1)
+  }
+  console.warn('[migrate] continuing despite error (VERCEL/MIGRATE_OPTIONAL set).')
 } finally {
-  await pool.end()
+  await pool.end().catch(() => {})
 }

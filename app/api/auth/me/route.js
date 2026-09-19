@@ -12,5 +12,7 @@ export async function GET() {
     role: user.role,
     name: user.name,
     initials: user.initials,
+    guest: !!user.guest,
+    sid: user.sid || null,
   })
 }
