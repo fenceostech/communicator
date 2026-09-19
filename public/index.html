@@ -988,10 +988,12 @@ const NAV = [
   {id:'accounts',n:'Subaccounts',i:'layers'},
   {id:'findings',n:'Findings',i:'shield',badge:1},
   
-  {id:'audit',n:'Audit Log',i:'list'},
+  {id:'guestlogs',n:'Guest Logs',i:'list'},
   {id:'snapshots',n:'Snapshots',i:'pkg'},
   {id:'settings',n:'Settings',i:'cog'}
 ];
+// Menu items only the Owner/Admin may see or open.
+const OWNER_ONLY_VIEWS = ['settings','guestlogs'];
 
 /* ---------- theme ---------- */
 function getTheme(){ try{return localStorage.getItem('fos-theme')||'system'}catch(e){return 'system'} }
@@ -1027,7 +1029,7 @@ function paintNav(){
     $$('#nav a').forEach(a=>a.onclick=()=>go(a.dataset.go));
     return;
   }
-  const navList = isOwner() ? NAV : NAV.filter(n=>n.id!=='settings');
+  const navList = isOwner() ? NAV : NAV.filter(n=>!OWNER_ONLY_VIEWS.includes(n.id));
   $('#nav').innerHTML = `<div class="nav-sec eyebrow">Workspace</div>` + navList.slice(0,4).map(n=>navItem(n,v)).join('')
     + `<div class="nav-sec eyebrow">Records</div>` + navList.slice(4).map(n=>navItem(n,v)).join('');
   $$('#nav a').forEach(a=>a.onclick=()=>go(a.dataset.go));
@@ -1039,7 +1041,7 @@ const CRUMBS = {
   dashboard:['Dashboard'], accounts:['Subaccounts'], wizard:['Subaccounts','New subaccount'],
   plan:['Subaccounts','Cedar Creek Fence Co.','Setup plan'], workspace:['Agent Runs','Cedar Creek Fence Co.'],
   verify:['Findings'], complete:['Subaccounts','Cedar Creek Fence Co.'],
-  audit:['Activity log'], findings:['Findings'], snapshots:['Snapshots'], settings:['Settings'],
+  audit:['Activity log'], findings:['Findings'], snapshots:['Snapshots'], settings:['Settings'], guestlogs:['Guest Logs'],
   account:['Subaccounts','']
 };
 function paintCrumb(){
@@ -1050,7 +1052,7 @@ function paintCrumb(){
 
 function go(v){
   if(!signedIn() && v!=='dashboard'){ openSignIn(); return; }
-  if(v==='settings' && !isOwner()){ toast('Owner only','bad'); return; }
+  if(OWNER_ONLY_VIEWS.includes(v) && !isOwner()){ toast('Owner only','bad'); return; }
   if(v==='findings'){ v='verify'; }
   if(v==='plan'){ v='dashboard'; }
   
@@ -1073,8 +1075,8 @@ function render(){
     paintAuth(); document.body.classList.remove('tech');
     return;
   }
-  el.innerHTML = ({dashboard:vDash, accounts:vAcctList, snapshots:vSnapshots, settings:vSettings, account:vAccount, wizard:vWiz, plan:vPlan, workspace:vWork, verify:vVerify, complete:vDone, audit:vAudit}[S.view]||vDash)();
-  ({wizard:bindWiz, plan:bindPlan, workspace:bindWork, verify:bindVerify, dashboard:bindDash, accounts:bindAcctList, snapshots:bindSnapshots, settings:bindSettings, account:bindAccount, complete:bindDone, audit:bindAudit}[S.view]||(()=>{}))();
+  el.innerHTML = ({dashboard:vDash, accounts:vAcctList, snapshots:vSnapshots, settings:vSettings, account:vAccount, wizard:vWiz, plan:vPlan, workspace:vWork, verify:vVerify, complete:vDone, audit:vAudit, guestlogs:vGuestLogs}[S.view]||vDash)();
+  ({wizard:bindWiz, plan:bindPlan, workspace:bindWork, verify:bindVerify, dashboard:bindDash, accounts:bindAcctList, snapshots:bindSnapshots, settings:bindSettings, account:bindAccount, complete:bindDone, audit:bindAudit, guestlogs:bindGuestLogs}[S.view]||(()=>{}))();
   paintAuth();
   if($('#chat').classList.contains('open')) paintDrawer(); else $('#chatCtx').textContent = chatCtx();
   document.body.classList.toggle('tech',S.tech);
@@ -1868,6 +1870,42 @@ function bindAudit(){
     const f=b.dataset.flt;
     $$('.audit-row').forEach(r=>{ r.style.display = (f==='all'||r.dataset.k===f)?'':'none'; $(`[data-ad="${r.dataset.a}"]`).classList.add('hide'); });
   });
+}
+
+/* ---------- Guest Logs (Owner/Admin only) ----------
+   Guest sign-in history from the guest_sessions table. The menu item is hidden
+   for guests/members, the route is guarded, and /api/guest-logins enforces
+   admin-only on the backend, so guests can never view these records. */
+let GUESTLOGS = [];
+function glInitials(name){ return String(name||'').split(/\s+/).filter(Boolean).slice(0,2).map(w=>w[0]).join('').toUpperCase()||'G'; }
+function glTime(iso){ try{ return new Date(iso).toLocaleString('en-US',{month:'short',day:'numeric',year:'numeric',hour:'numeric',minute:'2-digit'}); }catch(e){ return ''; } }
+function vGuestLogs(){
+  if(!isOwner()) return `<div class="card"><div class="pad"><p class="muted" style="font-size:13px">Owner only.</p></div></div>`;
+  const rows = Array.isArray(GUESTLOGS)?GUESTLOGS:[];
+  return `<div class="sec-head"><h1>Guest Logs</h1><div class="sp"></div>
+    <span class="dim" style="font-size:12.5px">Guest access sign-ins &middot; visible to owners only</span></div>
+  <div class="card">
+    <div class="pad" style="display:flex;align-items:center;gap:10px;border-bottom:1px solid var(--line)">
+      <h2 style="font-size:15px">Sign-in history</h2>
+      <div class="sp" style="margin-left:auto"></div>
+      <button class="btn sm" id="glRefresh">${ic('list',13)}Refresh</button>
+    </div>
+    <div class="scroll-x">
+    <table class="tbl"><thead><tr>
+      <th>Guest</th><th>Signed in</th><th class="hide-sm">Last activity</th>
+    </tr></thead><tbody>
+    ${rows.length?rows.map(r=>`<tr>
+      <td><div class="biz"><div class="sq" style="width:30px;height:30px;font-size:11px">${esc(glInitials(r.name))}</div><div><b>${esc(r.name||'Guest')}</b></div></div></td>
+      <td class="muted" style="white-space:nowrap;font-size:12.5px">${esc(glTime(r.created_at))}</td>
+      <td class="muted hide-sm" style="white-space:nowrap;font-size:12.5px">${esc(glTime(r.last_seen_at))}</td>
+    </tr>`).join(''):`<tr><td colspan="3" class="dim" style="padding:16px;font-size:12.5px">No guest sign-ins recorded yet.</td></tr>`}
+    </tbody></table></div>
+  </div>`;
+}
+function bindGuestLogs(){
+  if(!isOwner()) return;
+  const b=$('#glRefresh'); if(b) b.onclick=()=>{ if(window.__fosGuestLogs) window.__fosGuestLogs.refresh(); };
+  if(window.__fosGuestLogs) window.__fosGuestLogs.refresh(); // pull latest on open (loop-safe: only re-renders on change)
 }
 </script>
 <script>
@@ -3473,6 +3511,27 @@ render();
     },
   };
 
+  // ---- Guest login history (Owner/Admin only) ---------------------------
+  // Non-admins never fetch it; the endpoint also enforces 403 server-side.
+  let glSig = null;
+  async function loadGuestLogs() {
+    if (!isAdmin()) return false;
+    try {
+      const res = await fetch('/api/guest-logins', { cache: 'no-store' });
+      if (!res.ok) return false;
+      const j = await res.json();
+      const list = j.logins || [];
+      const sig = JSON.stringify(list.map((r) => [r.sid, r.last_seen_at]));
+      const changed = sig !== glSig;
+      glSig = sig;
+      GUESTLOGS.length = 0; list.forEach((r) => GUESTLOGS.push(r));
+      return changed;
+    } catch (e) { return false; }
+  }
+  window.__fosGuestLogs = {
+    async refresh() { const changed = await loadGuestLogs(); if (changed) render(); },
+  };
+
   // Saving the shared workspace is owner-only; members never write it.
   // Edits are committed explicitly via the Update button (window.__fosSave),
   // never auto-saved.
@@ -3557,6 +3616,7 @@ render();
     }
     await loadNotes();                   // notes from their own store
     await loadMessages();                // ask-the-agent inbox / outbox
+    await loadGuestLogs();               // owner-only guest sign-in history (no-op for non-admins)
     applyBrand && applyBrand(); render();
     ready = true;
     lastSavedJSON = canon();
