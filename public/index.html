@@ -736,7 +736,8 @@ const P = {
   grip:'<circle cx="9" cy="6" r="1.4" fill="currentColor" stroke="none"/><circle cx="15" cy="6" r="1.4" fill="currentColor" stroke="none"/><circle cx="9" cy="12" r="1.4" fill="currentColor" stroke="none"/><circle cx="15" cy="12" r="1.4" fill="currentColor" stroke="none"/><circle cx="9" cy="18" r="1.4" fill="currentColor" stroke="none"/><circle cx="15" cy="18" r="1.4" fill="currentColor" stroke="none"/>',
   up:'<path d="M12 19V5M5 12l7-7 7 7"/>',
   down:'<path d="M12 5v14M19 12l-7 7-7-7"/>',
-  file:'<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/>'
+  file:'<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/>',
+  edit:'<path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z"/>'
 };
 const ic=(n,sz)=>`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"${sz?` style="width:${sz}px;height:${sz}px"`:''}>${P[n]||''}</svg>`;
 
@@ -1169,9 +1170,16 @@ function vDash(){
   </div>`;
 }
 const stale=a=>a.days>35 && readiness(a.id)<100 && isBlocked(a.id);
+function acctInitials(name){
+  const parts=String(name||'').trim().split(/\s+/).filter(Boolean);
+  return parts.length?parts.slice(0,2).map(w=>w[0]).join('').toUpperCase():'NA';
+}
+function acctSearchBlob(a){
+  return [a.name,a.city,a.id,a.locId,a.phone,a.email,a.web,a.addr,a.locality,a.state,a.zip,a.grp].filter(Boolean).join(' ').toLowerCase();
+}
 function rowFor(a){
   const meterCls = blockClass(a.id);
-  return `<tr data-acct="${a.id}" data-name="${esc((a.name+' '+a.city+' '+a.id).toLowerCase())}">
+  return `<tr data-acct="${a.id}" data-name="${esc(acctSearchBlob(a))}">
     <td><div class="biz"><div class="sq ${a.logo?'haslogo':''}">${a.logo?`<img src="${a.logo}" alt="">`:a.init}</div><div><b>${esc(a.name)}</b><small>${a.id}</small></div></div></td>
     <td class="muted" style="white-space:nowrap">${esc(a.city)}</td>
     <td>${badge(acctStage(a.id))}${OVERRIDE[a.id]?'<span class="dim" style="font-size:10px;margin-left:5px">manual</span>':''}</td>
@@ -1320,8 +1328,8 @@ function bindWiz(){
     }
     if(S.wizStep===3){
       const id='loc_'+Math.random().toString(36).slice(2,6).replace(/^(.)/,c=>c.toUpperCase());
-      const init=(S.form.bname||'NA').split(/\s+/).slice(0,2).map(w=>w[0]).join('').toUpperCase();
-      const acc={id,name:S.form.bname,city:S.form.contact,status:'creation',prog:0,block:'none',note:'',created:'Sep 9, 2026',days:0,init};
+      const acc={id,name:S.form.bname,city:S.form.contact,status:'creation',prog:0,block:'none',note:'',created:'Sep 9, 2026',days:0,init:acctInitials(S.form.bname),grp:'fenceOS',
+        phone:S.form.phone,email:S.form.email,web:S.form.web,addr:S.form.addr,locality:S.form.city,state:S.form.state,zip:S.form.zip,tz:S.form.tz,industry:S.form.industry};
       ACCOUNTS.unshift(acc); MARKS[id]=new Set(); FIND[id]={}; NOTES[id]=[];
       S.acct=id; S.view='account'; logActivity('ok',actor(),'created subaccount <b>'+esc(acc.name)+'</b>'); render(); window.scrollTo(0,0);
       toast('Subaccount added — work the checklist, then run the audit'); return;
@@ -2210,6 +2218,36 @@ const latestNote = id=>(NOTES[id]&&NOTES[id].length)?NOTES[id][NOTES[id].length-
    VIEW · SUBACCOUNT AUDIT
    ============================================================ */
 const DNS_RECORDS=[['CNAME','link','sites.leadconnectorhq.com'],['CNAME','booking','sites.leadconnectorhq.com'],['TXT','@','v=spf1 include:mailgun.org ~all'],['CNAME','em1234','mailgun.org']];
+const TZONES=['America/Indiana/Indianapolis','America/Chicago','America/New_York','America/Denver','America/Phoenix','America/Los_Angeles','America/Boise'];
+function acctAddress(a){
+  const cityLine=[a.locality,[a.state,a.zip].filter(Boolean).join(' ')].filter(Boolean).join(', ');
+  return [a.addr, cityLine].filter(Boolean).join(', ');
+}
+function webHref(w){ w=String(w||'').trim(); if(!w) return ''; return /^https?:\/\//i.test(w)?w:'https://'+w; }
+function infoCard(a){
+  const addr=acctAddress(a);
+  const contact=a.phone||a.email||a.web||addr;
+  const row=(dt,dd)=>`<dt>${dt}</dt><dd>${dd}</dd>`;
+  return `<div class="card">
+    <div class="pad" style="border-bottom:1px solid var(--line);display:flex;align-items:center;gap:8px">
+      <h2>Business information</h2><div class="sp" style="margin-left:auto"></div>
+      ${isOwner()?`<button class="btn sm" id="editInfoCard">${ic('edit',12)}Edit</button>`:''}
+    </div>
+    <div class="pad">
+      <dl class="kv" style="grid-template-columns:auto 1fr;font-size:12.5px">
+        ${row('Owner', esc(a.city||'—'))}
+        ${a.phone?row('Phone', esc(a.phone)):''}
+        ${a.email?row('Email', `<a href="mailto:${esc(a.email)}">${esc(a.email)}</a>`):''}
+        ${a.web?row('Website', `<a href="${esc(webHref(a.web))}" target="_blank" rel="noopener">${esc(a.web)}</a>`):''}
+        ${addr?row('Address', esc(addr)):''}
+        ${a.tz?row('Time zone', `<span class="mono" style="font-size:11.5px">${esc(a.tz)}</span>`):''}
+        ${a.industry?row('Business type', esc(a.industry)):''}
+        ${a.grp?row('Group', esc(a.grp)):''}
+      </dl>
+      ${contact?'':`<p class="dim" style="font-size:12px;margin-top:10px">Phone, email, website, and address are not on file yet.</p>`}
+    </div>
+  </div>`;
+}
 function vAccount(){
   const a = ACCOUNTS.find(x=>x.id===S.acct)||ACCOUNTS[0];
   const pctv = readiness(a.id);
@@ -2261,6 +2299,7 @@ function vAccount(){
       <button class="btn" onclick="go('audit')">${ic('list')}Activity log</button>
       ${hasLink(a)?`<a class="btn" href="${acctUrl(a)}" target="_blank" rel="noopener">${ic('ext')}Open in Communicator</a>`
                    :`<button class="btn" id="editLink2">${ic('ext')}Add Communicator link</button>`}
+      ${isOwner()?`<button class="btn" id="editInfo">${ic('edit')}Edit information</button>`:''}
       <div class="sp" style="margin-left:auto"></div>
       ${isOwner()?`<button class="btn danger" id="delAcct">${ic('x')}Delete subaccount</button>`:''}
       <button class="btn" id="expandAll">Expand all</button>
@@ -2311,6 +2350,7 @@ function vAccount(){
     </div>
 
     <div style="display:flex;flex-direction:column;gap:14px">
+      ${infoCard(a)}
       <div class="card">
         <div class="pad" style="border-bottom:1px solid var(--line);display:flex;align-items:center">
           <h2>Findings</h2><div class="sp" style="margin-left:auto"></div>
@@ -2377,6 +2417,8 @@ function bindAccount(){
     GROUPS.forEach(g=>S.openG[g.id]=anyClosed); render(); };
   const el=$('#editLink'); if(el) el.onclick=()=>openLinkEditor(a);
   const elg=$('#editLogo'); if(elg) elg.onclick=()=>openAcctLogo(a);
+  const ei=$('#editInfo'); if(ei) ei.onclick=()=>openEditInfo(a);
+  const eic=$('#editInfoCard'); if(eic) eic.onclick=()=>openEditInfo(a);
   const el2=$('#editLink2'); if(el2) el2.onclick=()=>openLinkEditor(a);
   const da=$('#delAcct'); if(da) da.onclick=()=>openDeleteAcct(a);
   const ra=$('#runAudit'); if(ra) ra.onclick=()=>{ S.view='workspace'; S.run.logs=[]; S.run.ts={}; logActivity('ok','Setup Agent','started an audit on <b>'+esc(a.name)+'</b>'); render(); setTimeout(runStep,400); };
@@ -2406,6 +2448,74 @@ function bindAccount(){
       render(); toast('Note updated'); };
     $('[data-cancel]').onclick=()=>render();
   });
+}
+function openEditInfo(a){
+  if(!isOwner()){ toast('View only — only the owner can edit subaccount details','bad'); return; }
+  const groups=[...new Set(['fenceOS','TFC','On Hold'].concat(ACCOUNTS.map(x=>x.grp).filter(Boolean), a.grp? [a.grp]:[]))];
+  const zones=a.tz && !TZONES.includes(a.tz) ? [a.tz].concat(TZONES) : TZONES.slice();
+  const inp=(k,l,v,req,type,ph)=>`<div class="f${k==='addr'?' wide':''}" data-f="${k}">
+    <label for="e-${k}">${l} ${req?'<span class="req">*</span>':'<span class="opt">optional</span>'}</label>
+    <input id="e-${k}" value="${esc(v||'')}" placeholder="${ph||''}" type="${type||'text'}">
+    <div class="err">This field is required</div></div>`;
+  modal(`<div class="modal" role="dialog" aria-modal="true" aria-labelledby="editInfoTitle" style="width:min(680px,100%);display:flex;flex-direction:column;overflow:hidden;max-height:86vh">
+    <div class="modal-head"><div class="mi" style="background:var(--accent-soft);color:var(--accent)">${ic('edit',17)}</div>
+      <div style="flex:1"><h2 id="editInfoTitle">Edit information</h2>
+      <p class="muted" style="font-size:13px;margin-top:3px">${esc(a.name)}</p></div></div>
+    <div class="modal-body" style="overflow-y:auto;flex:1;min-height:0">
+      <p class="muted" style="font-size:12.5px;margin-bottom:14px">These details are the console&rsquo;s copy of the client. Click Update afterward to save them for everyone.</p>
+      <div class="fields">
+        ${inp('name','Business name',a.name,1,'text','Cedar Creek Fence Co.')}
+        ${inp('owner','Owner / primary contact',a.city,1,'text','Ellis Vaughn')}
+        ${inp('phone','Business phone',a.phone,0,'tel','(555) 010-0147')}
+        ${inp('email','Business email',a.email,0,'email','office@')}
+        ${inp('web','Website',a.web,0,'text','https://')}
+        ${inp('addr','Business address',a.addr,0,'text','1420 N Kentucky Ave')}
+        ${inp('locality','City',a.locality,0,'text','Cedar Creek')}
+        ${inp('state','State',a.state,0,'text','IN')}
+        ${inp('zip','ZIP code',a.zip,0,'text','47711')}
+        <div class="f"><label for="e-tz">Time zone <span class="opt">optional</span></label>
+          <select id="e-tz"><option value="">Not set</option>${zones.map(z=>`<option value="${esc(z)}" ${z===a.tz?'selected':''}>${esc(z)}</option>`).join('')}</select></div>
+        ${inp('industry','Business type',a.industry,0,'text','Residential fencing')}
+        <div class="f"><label for="e-grp">Group</label>
+          <select id="e-grp">${groups.map(g=>`<option value="${esc(g)}" ${g===(a.grp||'fenceOS')?'selected':''}>${esc(g)}</option>`).join('')}</select></div>
+      </div>
+    </div>
+    <div class="modal-foot"><button class="btn" onclick="closeModal()">Cancel</button><div class="sp"></div>
+      <button class="btn pri" id="infoSave">${ic('check')}Save</button></div></div>`);
+  $('#e-name').focus();
+  $('#infoSave').onclick=()=>{
+    const name=($('#e-name').value||'').trim();
+    const owner=($('#e-owner').value||'').trim();
+    const email=($('#e-email').value||'').trim();
+    let bad=false;
+    const mark=(k,ok,msg)=>{
+      const w=$(`[data-f="${k}"]`); if(!w) return;
+      w.classList.toggle('bad',!ok);
+      const err=$('.err',w); if(err && msg) err.textContent=msg;
+      if(!ok) bad=true;
+    };
+    mark('name', name.length>1, 'Enter the business name');
+    mark('owner', owner.length>1, 'Enter the owner or primary contact');
+    mark('email', !email || /^[^@\s]+@[^@\s]+\.[a-z]{2,}$/i.test(email), 'Enter a valid email address');
+    if(bad){ toast('Fix the highlighted fields','bad'); return; }
+    const set=(k,v)=>{ const t=(v||'').trim(); if(t) a[k]=t; else delete a[k]; };
+    a.name=name;
+    a.city=owner;
+    a.init=acctInitials(name);
+    set('phone',$('#e-phone').value);
+    set('email',email);
+    set('web',$('#e-web').value);
+    set('addr',$('#e-addr').value);
+    set('locality',$('#e-locality').value);
+    set('state',$('#e-state').value);
+    set('zip',$('#e-zip').value);
+    set('tz',$('#e-tz').value);
+    set('industry',$('#e-industry').value);
+    a.grp=$('#e-grp').value || a.grp || 'fenceOS';
+    closeModal();
+    logActivity('info',actor(),'updated information for <b>'+esc(a.name)+'</b>');
+    toast('Subaccount information updated');
+  };
 }
 function openAcctLogo(a){
   if(!isOwner()){ toast('View only — only the owner can edit subaccount details','bad'); return; }
@@ -2543,7 +2653,7 @@ function vAcctList(){
     </tr></thead><tbody id="listBody">
     ${rows.map(a=>{
       const r=readiness(a.id), fx=openFindings(a.id).length;
-      return `<tr data-acct="${a.id}" data-name="${esc((a.name+' '+a.city+' '+a.id).toLowerCase())}">
+      return `<tr data-acct="${a.id}" data-name="${esc(acctSearchBlob(a))}">
         <td><div class="biz"><div class="sq ${a.logo?'haslogo':''}">${a.logo?`<img src="${a.logo}" alt="">`:a.init}</div><div><b>${esc(a.name)}</b><small>${a.id}</small></div></div></td>
         <td class="muted" style="white-space:nowrap">${esc(a.city)}</td>
         <td>${badge(acctStage(a.id))}</td>
