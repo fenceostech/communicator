@@ -13,13 +13,11 @@ import { dirname, join } from 'node:path'
 import { scryptSync, randomBytes } from 'node:crypto'
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..')
-// DATABASE_URL wins; otherwise use the Supabase integration's direct URL
-// (previews on Vercel have no DATABASE_URL). Keep in sync with lib/db.js.
-const url =
-  process.env.DATABASE_URL ||
-  process.env.communicator_POSTGRES_URL_NON_POOLING ||
-  process.env.communicator_POSTGRES_URL ||
-  ''
+// DATABASE_URL wins; otherwise use the Supabase integration's pooled URL
+// (previews on Vercel have no DATABASE_URL). Not the NON_POOLING URL: its
+// db.<ref>.supabase.co host is IPv6-only, which Vercel builds can't reach.
+// Keep in sync with lib/db.js.
+const url = process.env.DATABASE_URL || process.env.communicator_POSTGRES_URL || ''
 if (!url) {
   // During a build (e.g. Vercel) without a database configured, skip gracefully
   // so the build still succeeds. Elsewhere, a missing URL is an error.
