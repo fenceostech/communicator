@@ -13,7 +13,13 @@ import { dirname, join } from 'node:path'
 import { scryptSync, randomBytes } from 'node:crypto'
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..')
-const url = process.env.DATABASE_URL
+// DATABASE_URL wins; otherwise use the Supabase integration's direct URL
+// (previews on Vercel have no DATABASE_URL). Keep in sync with lib/db.js.
+const url =
+  process.env.DATABASE_URL ||
+  process.env.communicator_POSTGRES_URL_NON_POOLING ||
+  process.env.communicator_POSTGRES_URL ||
+  ''
 if (!url) {
   // During a build (e.g. Vercel) without a database configured, skip gracefully
   // so the build still succeeds. Elsewhere, a missing URL is an error.
@@ -57,7 +63,19 @@ function sslFor(cs) {
   }
 }
 
-const pool = new Pool({ connectionString: url, ssl: sslFor(url) })
+// pg treats sslmode=require in the URL as full certificate verification and
+// lets it override the `ssl` option; drop the URL's SSL params so sslFor() decides.
+function withoutSslParams(cs) {
+  try {
+    const u = new URL(cs)
+    for (const k of ['sslmode', 'ssl', 'sslcert', 'sslkey', 'sslrootcert']) u.searchParams.delete(k)
+    return u.toString()
+  } catch {
+    return cs
+  }
+}
+
+const pool = new Pool({ connectionString: withoutSslParams(url), ssl: sslFor(url) })
 try {
   for (const f of sqlFiles('db/migrations')) {
     console.log('[migrate] apply', f)
