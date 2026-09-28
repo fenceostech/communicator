@@ -868,6 +868,29 @@ const CHECKS = [
 /* ============================================================
    STATE
    ============================================================ */
+const US_STATES=[['AL','Alabama'],['AK','Alaska'],['AZ','Arizona'],['AR','Arkansas'],['CA','California'],['CO','Colorado'],['CT','Connecticut'],['DE','Delaware'],['DC','District of Columbia'],['FL','Florida'],['GA','Georgia'],['HI','Hawaii'],['ID','Idaho'],['IL','Illinois'],['IN','Indiana'],['IA','Iowa'],['KS','Kansas'],['KY','Kentucky'],['LA','Louisiana'],['ME','Maine'],['MD','Maryland'],['MA','Massachusetts'],['MI','Michigan'],['MN','Minnesota'],['MS','Mississippi'],['MO','Missouri'],['MT','Montana'],['NE','Nebraska'],['NV','Nevada'],['NH','New Hampshire'],['NJ','New Jersey'],['NM','New Mexico'],['NY','New York'],['NC','North Carolina'],['ND','North Dakota'],['OH','Ohio'],['OK','Oklahoma'],['OR','Oregon'],['PA','Pennsylvania'],['RI','Rhode Island'],['SC','South Carolina'],['SD','South Dakota'],['TN','Tennessee'],['TX','Texas'],['UT','Utah'],['VT','Vermont'],['VA','Virginia'],['WA','Washington'],['WV','West Virginia'],['WI','Wisconsin'],['WY','Wyoming']];
+// <option>s for a state <select>. Keeps an unknown saved value (e.g. free text
+// from before this list existed) as the selected option so it isn't lost.
+function stateOptions(cur,blank){
+  const known=US_STATES.some(([c])=>c===cur);
+  return (blank?`<option value="">Not set</option>`:'')
+    +(cur&&!known?`<option value="${esc(cur)}" selected>${esc(cur)}</option>`:'')
+    +US_STATES.map(([c,n])=>`<option value="${c}" ${c===cur?'selected':''}>${c} — ${n}</option>`).join('');
+}
+// Files picked in the new-subaccount wizard. Kept out of S.form on purpose:
+// S.form is part of the saved workspace, and a File can't be serialized.
+const WIZ_FILES={ein:null, logo:null, logoName:''};
+const DOC_MAX=4*1024*1024;
+const DOC_ACCEPT='application/pdf,image/png,image/jpeg,image/webp,image/gif,.doc,.docx,.xls,.xlsx,.csv,.txt';
+function fmtBytes(n){ n=+n||0; return n<1024?n+' B':n<1048576?Math.round(n/1024)+' KB':(n/1048576).toFixed(1)+' MB'; }
+function pickFile(accept,cb){
+  const inp=document.createElement('input');
+  inp.type='file'; inp.accept=accept;
+  inp.onchange=()=>{ const f=inp.files&&inp.files[0]; if(!f) return;
+    if(f.size>DOC_MAX){ toast('File is over 4 MB — use a smaller file','bad'); return; }
+    cb(f); };
+  inp.click();
+}
 const S = {
   view:'dashboard', wizStep:0, useRec:true, tech:false, chatOpen:false,
   feats:new Set(FEATURES.filter(f=>f.rec).map(f=>f.id)),
@@ -1233,7 +1256,7 @@ function wStep1(){
       <input id="i-addr" value="${esc(S.form.addr)}"><div class="err">This field is required</div></div>
     ${fld('city','City','',1)}
     <div class="f" data-f="state"><label for="i-state">State <span class="req">*</span></label>
-      <select id="i-state">${['IN','KY','IL','OH','MI','TN','MO','OK','NC','OR','AL','NE','ID'].map(s=>`<option ${s===S.form.state?'selected':''}>${s}</option>`).join('')}</select></div>
+      <select id="i-state">${stateOptions(S.form.state)}</select></div>
     ${fld('zip','ZIP code','',1)}
     <div class="f" data-f="tz"><label for="i-tz">Time zone <span class="req">*</span></label>
       <select id="i-tz">${['America/Indiana/Indianapolis','America/Chicago','America/New_York','America/Denver','America/Los_Angeles'].map(s=>`<option ${s===S.form.tz?'selected':''}>${s}</option>`).join('')}</select></div>
@@ -1255,10 +1278,20 @@ function wStep2(){
       <input id="i-c2t" class="mono" value="${S.form.c2}" style="flex:1"></div></div>
     ${fld('tone','Brand tone','Established, local',0)}
     <div class="f"><label>EIN / CP-575 <span class="opt">required for A2P</span></label>
-      <input value="CP-575 — Cedar Creek Fence Co LLC.pdf" readonly style="color:var(--ink-2)"></div>
-    <div class="f wide"><label>Company logo</label>
-      <div class="drop">${ic('file',18)}<div style="margin-top:6px"><b style="color:var(--ink)">cedar-creek-logo.png</b> · 1400 × 720 · uploaded</div>
-      <div style="margin-top:3px">The agent resizes to 350 × 180, 300 × 300 and 1819 × 646</div></div></div>
+      <div class="drop" style="padding:10px 12px;text-align:left;display:flex;align-items:center;gap:9px">
+        ${ic('file',16)}<span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${WIZ_FILES.ein?`<b style="color:var(--ink)">${esc(WIZ_FILES.ein.name)}</b> · ${fmtBytes(WIZ_FILES.ein.size)}`:'No file chosen'}</span>
+        <button class="btn sm" id="wEin" type="button">${WIZ_FILES.ein?'Replace':'Choose file'}</button>
+        ${WIZ_FILES.ein?`<button class="btn sm ghost" id="wEinClr" type="button" style="color:var(--crit)">Remove</button>`:''}
+      </div>
+      <div class="hint">PDF or image, up to 4 MB. Saved to the subaccount&rsquo;s documents when you add it.</div></div>
+    <div class="f wide"><label>Company logo <span class="opt">optional</span></label>
+      <div class="drop" style="display:flex;align-items:center;gap:14px;text-align:left">
+        <div class="brandprev" style="width:96px;height:60px;flex:none">${WIZ_FILES.logo?`<img src="${WIZ_FILES.logo}" alt="">`:ic('file',18)}</div>
+        <div style="flex:1;min-width:0">${WIZ_FILES.logo?`<b style="color:var(--ink)">${esc(WIZ_FILES.logoName||'Logo')}</b>`:'No logo chosen'}
+          <div style="margin-top:3px">PNG, JPG, SVG or WebP, up to 600 KB. The agent resizes to 350 × 180, 300 × 300 and 1819 × 646.</div></div>
+        <button class="btn sm" id="wLogo" type="button">${WIZ_FILES.logo?'Replace':'Choose image'}</button>
+        ${WIZ_FILES.logo?`<button class="btn sm ghost" id="wLogoClr" type="button" style="color:var(--crit)">Remove</button>`:''}
+      </div></div>
   </div>`;
 }
 function wStep3(){
@@ -1294,6 +1327,8 @@ function wStep4(){
         <dt>Website</dt><dd>${esc(S.form.web)}</dd>
         <dt>Time zone</dt><dd class="mono" style="font-size:12.5px">${S.form.tz}</dd>
         <dt>Primary contact</dt><dd>${esc(S.form.contact)}</dd>
+        <dt>EIN / CP-575</dt><dd>${WIZ_FILES.ein?esc(WIZ_FILES.ein.name):'<span class="dim">Not attached</span>'}</dd>
+        <dt>Logo</dt><dd>${WIZ_FILES.logo?esc(WIZ_FILES.logoName||'Attached'):'<span class="dim">Not attached</span>'}</dd>
       </dl></div>
     <hr class="divide">
     <div><div class="eyebrow" style="margin-bottom:8px">Brand</div>
@@ -1330,12 +1365,22 @@ function bindWiz(){
       const id='loc_'+Math.random().toString(36).slice(2,6).replace(/^(.)/,c=>c.toUpperCase());
       const acc={id,name:S.form.bname,city:S.form.contact,status:'creation',prog:0,block:'none',note:'',created:'Sep 9, 2026',days:0,init:acctInitials(S.form.bname),grp:'fenceOS',
         phone:S.form.phone,email:S.form.email,web:S.form.web,addr:S.form.addr,locality:S.form.city,state:S.form.state,zip:S.form.zip,tz:S.form.tz,industry:S.form.industry};
-      ACCOUNTS.unshift(acc); MARKS[id]=new Set(); FIND[id]={}; NOTES[id]=[];
+      if(WIZ_FILES.logo) acc.logo=WIZ_FILES.logo;
+      ACCOUNTS.unshift(acc); MARKS[id]=new Set(); FIND[id]={}; NOTES[id]=[]; DOCS[id]=[];
+      const ein=WIZ_FILES.ein;
+      WIZ_FILES.ein=null; WIZ_FILES.logo=null; WIZ_FILES.logoName='';
       S.acct=id; S.view='account'; logActivity('ok',actor(),'created subaccount <b>'+esc(acc.name)+'</b>'); render(); window.scrollTo(0,0);
-      toast('Subaccount added — work the checklist, then run the audit'); return;
+      if(ein){
+        uploadDoc(id,ein,'ein').then(r=>{ if(S.view==='account'&&S.acct===id) render(); toast(r.ok?'Subaccount added and CP-575 saved — click Update to save the subaccount':'Subaccount added, but the CP-575 upload failed: '+esc(r.error)+'. Upload it again from Documents.',r.ok?undefined:'bad'); });
+      } else toast('Subaccount added — work the checklist, then run the audit');
+      return;
     }
     S.wizStep++; render(); window.scrollTo(0,0);
   };
+  const we=$('#wEin'); if(we) we.onclick=()=>pickFile('application/pdf,image/png,image/jpeg,image/webp',f=>{ readForm(); WIZ_FILES.ein=f; render(); });
+  const wec=$('#wEinClr'); if(wec) wec.onclick=()=>{ readForm(); WIZ_FILES.ein=null; render(); };
+  const wl=$('#wLogo'); if(wl) wl.onclick=()=>pickImage((d,f)=>{ readForm(); WIZ_FILES.logo=d; WIZ_FILES.logoName=f?f.name:''; render(); });
+  const wlc=$('#wLogoClr'); if(wlc) wlc.onclick=()=>{ readForm(); WIZ_FILES.logo=null; WIZ_FILES.logoName=''; render(); };
   const sw=$('#recSw');
   if(sw) sw.onclick=()=>{ S.useRec=!S.useRec; if(S.useRec){S.feats=new Set(FEATURES.filter(f=>f.rec).map(f=>f.id));} render(); };
   $$('[data-feat]').forEach(b=>b.onclick=()=>{
@@ -2248,6 +2293,79 @@ function infoCard(a){
     </div>
   </div>`;
 }
+/* Documents: files live in the database (/api/documents), not in the saved
+   workspace, so an upload is stored immediately and needs no Update click. */
+const DOCS={};            // accountId -> [{id,kind,name,mime,size,uploaded_by,created_at}]
+const DOC_KINDS={ein:'EIN / CP-575',logo:'Logo',contract:'Contract',other:'Other'};
+async function loadDocs(accountId){
+  try{
+    const res=await fetch('/api/documents?accountId='+encodeURIComponent(accountId),{cache:'no-store'});
+    const j=await res.json().catch(()=>({}));
+    DOCS[accountId]=res.ok?(j.documents||[]):{error:j.error||'Could not load documents'};
+  }catch(e){ DOCS[accountId]={error:'Network error'}; }
+}
+async function uploadDoc(accountId,file,kind){
+  const fd=new FormData(); fd.append('accountId',accountId); fd.append('kind',kind||'other'); fd.append('file',file);
+  try{
+    const res=await fetch('/api/documents',{method:'POST',body:fd});
+    const j=await res.json().catch(()=>({}));
+    if(!res.ok) return {ok:false,error:j.error||(res.status===413?'File is over 4 MB':'Upload failed')};
+    if(Array.isArray(DOCS[accountId])) DOCS[accountId].unshift(j.document);
+    return {ok:true};
+  }catch(e){ return {ok:false,error:'Network error'}; }
+}
+async function deleteDoc(accountId,id){
+  try{
+    const res=await fetch('/api/documents/'+id,{method:'DELETE'});
+    const j=await res.json().catch(()=>({}));
+    if(!res.ok) return {ok:false,error:j.error||'Delete failed'};
+    if(Array.isArray(DOCS[accountId])) DOCS[accountId]=DOCS[accountId].filter(d=>d.id!==id);
+    return {ok:true};
+  }catch(e){ return {ok:false,error:'Network error'}; }
+}
+function docsCard(a){
+  const list=DOCS[a.id];
+  const when=iso=>{ try{ return new Date(iso).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}); }catch(e){ return ''; } };
+  let body;
+  if(list===undefined) body=`<p class="dim" style="font-size:12.5px">Loading&hellip;</p>`;
+  else if(list.error) body=`<p style="font-size:12.5px;color:var(--crit)">${esc(list.error)}</p>`;
+  else if(!list.length) body=`<p class="dim" style="font-size:12.5px">No documents yet.${isOwner()?' Upload the EIN / CP-575 and anything else A2P review will need.':''}</p>`;
+  else body=list.map(d=>`<div style="display:flex;align-items:center;gap:9px;padding:7px 0;border-top:1px solid var(--line)">
+      ${ic('file',15)}
+      <div style="flex:1;min-width:0">
+        <a href="/api/documents/${d.id}" style="font-size:12.5px;font-weight:600;display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="Download ${esc(d.name)}">${esc(d.name)}</a>
+        <small class="dim" style="font-size:11px">${esc(DOC_KINDS[d.kind]||'Other')} · ${fmtBytes(d.size)} · ${when(d.created_at)}${d.uploaded_by?' · '+esc(d.uploaded_by):''}</small>
+      </div>
+      ${isOwner()?`<button class="btn sm ghost" data-docdel="${d.id}" style="color:var(--crit)" aria-label="Delete ${esc(d.name)}">${ic('x',12)}</button>`:''}
+    </div>`).join('');
+  return `<div class="card">
+    <div class="pad" style="border-bottom:1px solid var(--line);display:flex;align-items:center;gap:8px">
+      <h2>Documents</h2><div class="sp" style="margin-left:auto"></div>
+      ${isOwner()?`<select id="docKind" aria-label="Document type" style="font-size:12px;padding:3px 6px">${Object.entries(DOC_KINDS).map(([k,v])=>`<option value="${k}">${v}</option>`).join('')}</select>
+        <button class="btn sm" id="docUp">${ic('plus',12)}Upload</button>`:''}
+    </div>
+    <div class="pad" style="padding-top:6px;padding-bottom:8px">${body}
+      ${isOwner()?`<p class="dim" style="font-size:11px;margin-top:8px">PDF, image, Word, Excel, CSV or text · up to 4 MB. Saved right away.</p>`:''}</div>
+  </div>`;
+}
+function bindDocs(a){
+  if(DOCS[a.id]===undefined) loadDocs(a.id).then(()=>{ if(S.view==='account'&&S.acct===a.id) render(); });
+  const up=$('#docUp');
+  if(up) up.onclick=()=>pickFile(DOC_ACCEPT,async f=>{
+    const kind=($('#docKind')||{}).value||'other';
+    up.disabled=true; up.textContent='Uploading…';
+    const r=await uploadDoc(a.id,f,kind);
+    toast(r.ok?'Uploaded '+esc(f.name):'Upload failed: '+esc(r.error),r.ok?undefined:'bad');
+    render();
+  });
+  $$('[data-docdel]').forEach(b=>b.onclick=async()=>{
+    const id=+b.dataset.docdel; const d=(DOCS[a.id]||[]).find(x=>x.id===id);
+    if(!confirm('Delete '+(d?d.name:'this document')+'? This cannot be undone.')) return;
+    const r=await deleteDoc(a.id,id);
+    toast(r.ok?'Document deleted':'Delete failed: '+esc(r.error),r.ok?undefined:'bad');
+    render();
+  });
+}
 function vAccount(){
   const a = ACCOUNTS.find(x=>x.id===S.acct)||ACCOUNTS[0];
   const pctv = readiness(a.id);
@@ -2351,6 +2469,7 @@ function vAccount(){
 
     <div style="display:flex;flex-direction:column;gap:14px">
       ${infoCard(a)}
+      ${docsCard(a)}
       <div class="card">
         <div class="pad" style="border-bottom:1px solid var(--line);display:flex;align-items:center">
           <h2>Findings</h2><div class="sp" style="margin-left:auto"></div>
@@ -2419,6 +2538,7 @@ function bindAccount(){
   const elg=$('#editLogo'); if(elg) elg.onclick=()=>openAcctLogo(a);
   const ei=$('#editInfo'); if(ei) ei.onclick=()=>openEditInfo(a);
   const eic=$('#editInfoCard'); if(eic) eic.onclick=()=>openEditInfo(a);
+  bindDocs(a);
   const el2=$('#editLink2'); if(el2) el2.onclick=()=>openLinkEditor(a);
   const da=$('#delAcct'); if(da) da.onclick=()=>openDeleteAcct(a);
   const ra=$('#runAudit'); if(ra) ra.onclick=()=>{ S.view='workspace'; S.run.logs=[]; S.run.ts={}; logActivity('ok','Setup Agent','started an audit on <b>'+esc(a.name)+'</b>'); render(); setTimeout(runStep,400); };
@@ -2471,7 +2591,8 @@ function openEditInfo(a){
         ${inp('web','Website',a.web,0,'text','https://')}
         ${inp('addr','Business address',a.addr,0,'text','1420 N Kentucky Ave')}
         ${inp('locality','City',a.locality,0,'text','Cedar Creek')}
-        ${inp('state','State',a.state,0,'text','IN')}
+        <div class="f" data-f="state"><label for="e-state">State <span class="opt">optional</span></label>
+          <select id="e-state">${stateOptions(a.state,1)}</select></div>
         ${inp('zip','ZIP code',a.zip,0,'text','47711')}
         <div class="f"><label for="e-tz">Time zone <span class="opt">optional</span></label>
           <select id="e-tz"><option value="">Not set</option>${zones.map(z=>`<option value="${esc(z)}" ${z===a.tz?'selected':''}>${esc(z)}</option>`).join('')}</select></div>
@@ -2804,7 +2925,7 @@ function pickImage(cb){
   inp.type='file'; inp.accept='image/png,image/jpeg,image/svg+xml,image/webp';
   inp.onchange=()=>{ const f=inp.files&&inp.files[0]; if(!f) return;
     if(f.size>600*1024){ toast('Image is over 600KB — use a smaller file','bad'); return; }
-    const r=new FileReader(); r.onload=()=>cb(r.result); r.readAsDataURL(f); };
+    const r=new FileReader(); r.onload=()=>cb(r.result,f); r.readAsDataURL(f); };
   inp.click();
 }
 function setBrand(){
@@ -2827,7 +2948,7 @@ function setBrand(){
     ${slot('icon','App icon','Square mark. Appears in the top bar on narrow screens and stands in for the favicon.',false)}
     ${slot('favicon','Favicon','The browser tab icon. A 32 × 32 or 64 × 64 PNG works best. Falls back to the app icon.',false)}
     <div class="note-new">
-      <p class="dim" style="font-size:11.5px">Images are held in the page, so they reset on refresh and are not shared with your team. Once there is a backend they upload once and stick.</p>
+      <p class="dim" style="font-size:11.5px">Images are saved with the workspace when you click Update, and everyone on the team sees them. Keep each under 600 KB.</p>
     </div>
   </div>`;
 }
